@@ -4,7 +4,7 @@ One GitHub Actions workflow, **both sources immediately selectable**:
 - CyberChainBench: `defai-labs/CyberChainBench`
 - ReEVMBench: `blocksecteam/ReEVMBench`
 
-Open [Actions / Security benchmark gateway](../../actions/workflows/security-benchmark-gateway.yml) on the default branch. Choose **Run workflow**.
+Open [Actions / Security benchmark gateway](https://github.com/SFS-Labs/ctf-skill-factory/actions/workflows/security-benchmark-gateway.yml) on the default branch. Choose **Run workflow**.
 
 ## Operations
 
