@@ -166,9 +166,24 @@ def load_reference(source: str, case_id: str) -> dict:
         if not re.fullmatch(r"[a-fA-F0-9]{40}", commit):
             raise GatewayError("Cannot pin the audit target source")
         references = []
-        for block in re.split(r"(?m)^\s+- id:\s*", config)[1:]:
-            match_id = re.match(r'["\']?([A-Za-z0-9_-]+)', block)
-            match_title = re.search(r'(?m)^\s+title:\s*(.+)
+        for block in re.split(r"(?m)^[ \\t]+- id:[ \\t]*", config)[1:]:
+            match_id = re.match(r"""["']?([A-Za-z0-9_-]+)""", block)
+            match_title = re.search(r"(?m)^[ \\t]+title:[ \\t]*(.+)$", block)
+            if match_id:
+                title = match_title.group(1).strip() if match_title else ""
+                references.append({
+                    "id": match_id.group(1),
+                    "title": title.strip("\\\"'"),
+                })
+        return {
+            "id": case_id,
+            "repo_url": repo_url,
+            "base_commit": commit,
+            "revision_method": revision_method,
+            "run_cmd_dir": yaml_scalar(config, "run_cmd_dir"),
+            "vulnerability_ids": [entry["id"] for entry in references],
+            "reference_findings": references,
+        }
     raise GatewayError("Unsupported source")
 
 
