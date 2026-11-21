@@ -1,0 +1,66 @@
+name: Native ReEVMBench reference calibration (one-shot)
+
+# EVALUATOR-ONLY. NOT A FREEBUFF RUN. No scheduled execution.
+on:
+  push:
+    branches: [validation/native-exploit-score-calibration-20261121]
+    paths: [.github/workflows/native-score-calibration-once.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  reference-calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SFS_NATIVE_OUTPUT: ${{ github.workspace }}/benchmark-results/native
+      # No production blockchain RPC / model API secrets supplied to this job.
+      # The official ReEVMBench deploys and scores against its isolated Anvil chain.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - name: Validate code and safe-failure behavior
+        run: |
+          bash -n benchmarks/run-native-exploit.sh
+          python -m unittest discover -s benchmarks/tests -v
+          docker info >/dev/null
+      - name: Freeze upstream public reference in evaluator-only workspace
+        run: |
+          mkdir -p benchmarks/submissions benchmark-results/calibration
+          git clone --quiet --filter=blob:none --no-checkout https://github.com/blocksecteam/ReEVMBench.git /tmp/reevm-evaluator-reference
+          git -C /tmp/reevm-evaluator-reference checkout --quiet --detach af878a75d628599736c78e8fe9655a57b041206e
+          cp /tmp/reevm-evaluator-reference/audits/2026-01-tempo-stablecoin-dex/exploit/gold.sh benchmarks/submissions/evaluator-reference.sh
+          sha256sum benchmarks/submissions/evaluator-reference.sh > benchmark-results/calibration/reference.sha256
+          printf 'CALIBRATION_ONLY: native reference, NEVER Freebuff candidate\n' > benchmark-results/calibration/classification.txt
+      - name: Execute native scorer against frozen evaluator reference
+        run: |
+          bash benchmarks/run-native-exploit.sh score \
+            reevmbench 2026-01-tempo-stablecoin-dex \
+            benchmarks/submissions/evaluator-reference.sh
+      - name: Gather evaluator metadata
+        if: always()
+        run: |
+          mkdir -p benchmark-results/calibration
+          {
+            echo "CALIBRATION ONLY — NOT A FREEBUFF RESULT"
+            echo "Job: ${{ github.job }}"
+            echo "Run: ${{ github.run_id }}"
+            date -u
+          } > benchmark-results/calibration/runner-info.txt
+          find benchmark-results/native -type f -maxdepth 3 -printf '%p %s bytes\n' 2>/dev/null \
+            > benchmark-results/calibration/output-inventory.txt || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reevm-native-evaluator-only-calibration
+          path: |
+            benchmark-results/calibration/
+            benchmark-results/native/
+          if-no-files-found: warn
+          retention-days: 5
