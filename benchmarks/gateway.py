@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 import urllib.error
@@ -51,6 +52,75 @@ def fetch_text(source: str, path: str) -> str:
     return data.decode("utf-8")
 
 
+def fetch_github_json(url: str) -> dict | list:
+    """Fetch metadata from GitHub's public API without credentials."""
+    if not url.startswith("https://api.github.com/repos/"):
+        raise GatewayError("Unexpected GitHub API endpoint")
+    request = urllib.request.Request(
+        url, headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "SFS-Security-Benchmark-Gateway/1.1",
+        }
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+            raw = response.read(2_000_001)
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise GatewayError(f"Cannot fetch public repository metadata ({exc})") from exc
+    if len(raw) > 2_000_000:
+        raise GatewayError("GitHub metadata exceeded size limit")
+    return json.loads(raw)
+
+
+def snapshot_head(repo_url: str) -> str:
+    """Pin a public upstream HEAD when ReEVMBench omits base_commit."""
+    match = re.fullmatch(r"https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)", repo_url)
+    if not match:
+        raise GatewayError("Unexpected source repository URL")
+    owner, name = match.groups()
+    data = fetch_github_json(
+        f"https://api.github.com/repos/{owner}/{name}/commits?per_page=1"
+    )
+    sha = data[0].get("sha", "") if isinstance(data, list) and data else ""
+    if not re.fullmatch(r"[a-fA-F0-9]{40}", sha):
+        raise GatewayError("Cannot establish immutable source revision")
+    return sha
+
+
+def catalog(source: str) -> dict:
+    if source == "cyberchainbench":
+        conf = SOURCES[source]
+        repo = conf["repository"]
+        ref = conf["ref"]
+        rows = fetch_github_json(
+            f"https://api.github.com/repos/{repo}/contents/data/benchmark/cases?ref={ref}"
+        )
+        if not isinstance(rows, list):
+            raise GatewayError("CyberChainBench catalog unavailable")
+        ids = sorted(
+            row["name"][:-5] for row in rows
+            if isinstance(row, dict)
+            and re.fullmatch(r"bench-[0-9]+\.json", row.get("name", ""))
+        )
+    else:
+        ids = sorted(
+            line.strip() for line in fetch_text(source, "splits/detect-tasks.txt").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        )
+    if not ids or len(ids) != len(set(ids)) or any(
+        not CASE_RE.fullmatch(case_id) for case_id in ids
+    ):
+        raise GatewayError("Invalid or empty benchmark catalog")
+    return {
+        "schema": "sfs-benchmark-catalog-v1",
+        "benchmark": source,
+        "revision": SOURCES[source]["ref"],
+        "case_count": len(ids),
+        "case_ids": ids,
+        "note": "Catalog for evaluator selection only. Do not pass case IDs to blind auditor.",
+    }
+
+
 def yaml_scalar(contents: str, key: str) -> str | None:
     match = re.search(
         rf"(?m)^{re.escape(key)}:\s*['\"]?([^\n#'\"]+)", contents
@@ -86,17 +156,33 @@ def load_reference(source: str, case_id: str) -> dict:
         commit = yaml_scalar(config, "base_commit")
         if yaml_scalar(config, "id") != case_id:
             raise GatewayError("Case ID mismatch")
-        if not repository or not commit or not re.fullmatch(r"[a-fA-F0-9]{40}", commit):
-            raise GatewayError("Pinned target source unavailable in this audit")
-        vuln_ids = re.findall(
-            r'(?m)^\s+- id:\s*["\']?([A-Za-z0-9_-]+)', config
-        )
+        if not repository:
+            raise GatewayError("Audit Dockerfile does not name a public source repository")
+        repo_url = repository.group(0).removesuffix(".git")
+        revision_method = "benchmark_base_commit"
+        if not commit:
+            commit = snapshot_head(repo_url)
+            revision_method = "upstream_head_at_preparation"
+        if not re.fullmatch(r"[a-fA-F0-9]{40}", commit):
+            raise GatewayError("Cannot pin the audit target source")
+        references = []
+        for block in re.split(r"(?m)^[ \\t]+- id:[ \\t]*", config)[1:]:
+            match_id = re.match(r"""["']?([A-Za-z0-9_-]+)""", block)
+            match_title = re.search(r"(?m)^[ \\t]+title:[ \\t]*(.+)$", block)
+            if match_id:
+                title = match_title.group(1).strip() if match_title else ""
+                references.append({
+                    "id": match_id.group(1),
+                    "title": title.strip("\\\"'"),
+                })
         return {
             "id": case_id,
-            "repo_url": repository.group(0).removesuffix(".git"),
+            "repo_url": repo_url,
             "base_commit": commit,
+            "revision_method": revision_method,
             "run_cmd_dir": yaml_scalar(config, "run_cmd_dir"),
-            "vulnerability_ids": vuln_ids,
+            "vulnerability_ids": [entry["id"] for entry in references],
+            "reference_findings": references,
         }
     raise GatewayError("Unsupported source")
 
@@ -138,6 +224,7 @@ def prepare(source: str, case_id: str, phase: str) -> dict:
         brief["target"] = {
             "source_repository": document["repo_url"],
             "source_commit": document["base_commit"],
+            "revision_method": document["revision_method"],
             "working_subdirectory": document.get("run_cmd_dir"),
         }
     # No case IDs, incident names, known attack txs, fix text, vuln labels or functions.
@@ -153,6 +240,9 @@ def grade(source: str, case_id: str, submission: dict) -> dict:
         raise GatewayError("Submission requires findings: array of <=100 objects")
     grade_result = {
         "schema": "sfs-benchmark-grade-v1",
+        "frozen_submission_sha256": hashlib.sha256(
+            json.dumps(submission, sort_keys=True, ensure_ascii=False).encode()
+        ).hexdigest(),
         "alias": case_alias(source, case_id),
         "benchmark": source,
         "reported_findings": len(findings),
@@ -180,12 +270,12 @@ def grade(source: str, case_id: str, submission: dict) -> dict:
         ]
         grade_result["finding_id_match"] = bool(matches)
         grade_result["matching_finding_indices"] = matches
-        grade_result["status"] = (
-            "ID_MATCH_UNVERIFIED" if matches else "MANUAL_REVIEW_REQUIRED"
-        )
+        grade_result["reference_findings"] = document["reference_findings"]
+        grade_result["status"] = "MANUAL_REVIEW_REQUIRED"
         grade_result["warning"] = (
-            "ReEVMBench finding IDs alone cannot validate a technical finding; "
-            "review code and exploit evidence independently."
+            "ReEVMBench finding IDs are withheld from the blind auditor. "
+            "Use the reference findings above only after freezing the report; "
+            "review technical evidence independently. No official score claimed."
         )
     return grade_result
 
@@ -202,25 +292,45 @@ def confined_submission_path(argument: str) -> Path:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["prepare", "grade"])
+    parser.add_argument("command", choices=["catalog", "prepare", "grade", "smoke"])
     parser.add_argument("--source", choices=sorted(SOURCES), required=True)
-    parser.add_argument("--case-id", required=True)
+    parser.add_argument("--case-id", default="")
     parser.add_argument("--phase", choices=["detect", "reproduce"], default="detect")
     parser.add_argument("--submission", help="JSON filename inside benchmarks/submissions/")
+    parser.add_argument("--submission-json-env", action="store_true",
+                        help="Read JSON from SUBMISSION_JSON environment variable")
     parser.add_argument("--output", required=True, help="Output JSON path")
     args = parser.parse_args(argv)
 
     try:
-        validate_id(args.case_id)
-        if args.command == "prepare":
+        if args.command == "catalog":
+            result = catalog(args.source)
+        elif args.command == "smoke":
+            result = {
+                "schema": "sfs-benchmark-smoke-v1",
+                "cases": [
+                    prepare("cyberchainbench", "bench-01", "detect"),
+                    prepare("reevmbench", "2024-06-thorchain", "detect"),
+                ],
+                "note": "Two live upstream case adapters exercised; no agent or exploit executed.",
+            }
+        elif args.command == "prepare":
             result = prepare(args.source, args.case_id, args.phase)
         else:
-            if not args.submission:
-                raise GatewayError("--submission required for grade")
-            result = grade(
-                args.source, args.case_id,
-                json.loads(confined_submission_path(args.submission).read_text(encoding="utf-8")),
-            )
+            if args.submission_json_env:
+                raw = os.environ.get("SUBMISSION_JSON", "")
+                if not raw or len(raw) > 50000:
+                    raise GatewayError("SUBMISSION_JSON missing or too large")
+                submission = json.loads(raw)
+            elif args.submission:
+                submission = json.loads(
+                    confined_submission_path(args.submission).read_text(encoding="utf-8")
+                )
+            else:
+                raise GatewayError("Provide --submission or --submission-json-env")
+            if not isinstance(submission, dict):
+                raise GatewayError("Submission must be a JSON object")
+            result = grade(args.source, args.case_id, submission)
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(
