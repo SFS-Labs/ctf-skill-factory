@@ -15,8 +15,8 @@ CYBER = {
     "chain": "bsc",
     "block_number": 12653565,
     "vulnerable_address": "0xf642f2a626a8b732619606c493abfc2433dd2d35",
-    "function": "_calculateSwap",
-    "type": "accounting-error",
+    "function": "syntheticFunction",
+    "type": "synthetic-vuln",
     "file": "MetaSwapUtils.sol",
     "fix_description": "SECRET FIX",
     "attack_txs": ["0xattack"],
@@ -45,7 +45,7 @@ class GatewayTest(unittest.TestCase):
             brief = gateway.prepare("cyberchainbench", "bench-01", "detect")
         output = json.dumps(brief)
         for secret in (
-            "_calculateSwap", "accounting-error", "SECRET FIX",
+            "syntheticFunction", "synthetic-vuln", "SECRET FIX",
             "0xattack", "Known incident", "bench-01", "12653565",
         ):
             self.assertNotIn(secret, output)
@@ -70,7 +70,7 @@ class GatewayTest(unittest.TestCase):
     def test_cyber_grade(self):
         with patch.object(gateway, "fetch_text", side_effect=mocked):
             good = gateway.grade("cyberchainbench", "bench-01", {
-                "findings": [{"type": "ACCOUNTING-ERROR", "function": "_calculateSwap"}]
+                "findings": [{"type": "SYNTHETIC-VULN", "function": "syntheticFunction"}]
             })
             bad = gateway.grade("cyberchainbench", "bench-01", {
                 "findings": [{"type": "reentrancy", "function": "withdraw"}]
@@ -125,8 +125,8 @@ vulnerabilities:
     def test_inline_submission_works_without_commit(self):
         with tempfile.TemporaryDirectory() as td:
             target = Path(td) / "grade.json"
-            report = {"findings": [{"type": "accounting-error",
-                                    "function": "_calculateSwap"}]}
+            report = {"findings": [{"type": "synthetic-vuln",
+                                    "function": "syntheticFunction"}]}
             with patch.object(gateway, "fetch_text", side_effect=mocked):
                 with patch.dict(os.environ, {"SUBMISSION_JSON": json.dumps(report)}):
                     exit_code = gateway.main([
