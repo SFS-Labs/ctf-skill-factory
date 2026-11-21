@@ -36,6 +36,15 @@ class NativeRunnerBoundaryTests(unittest.TestCase):
         self.assertEqual(outcome.returncode, 3, outcome.stderr)
         self.assertIn("frozen .sh", outcome.stderr)
 
+    def test_cyber_score_stages_pinned_forge_std(self):
+        from json import loads
+        root = SCRIPT.parent
+        sources = loads((root / "sources.json").read_text())
+        self.assertEqual(len(sources["cyberchainbench"]["forge_std_ref"]), 40)
+        script = SCRIPT.read_text()
+        self.assertIn('forge_std="$target/data/sources/DeFiHackLabs/lib/forge-std"', script)
+        self.assertIn('test -f "$forge_std/src/Test.sol"', script)
+
     def test_cyber_native_score_checks_actual_cli_schema(self):
         import json
         import sys
