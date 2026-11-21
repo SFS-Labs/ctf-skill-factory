@@ -1,4 +1,5 @@
 name: Native official exploit harness two-source preparation
+# Retry: CyberChainBench module shadowing fixed in run-native-exploit.sh
 
 on:
   push:
