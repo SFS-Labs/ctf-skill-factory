@@ -1,0 +1,10 @@
+{
+  "cyberchainbench": {
+    "repository": "defai-labs/CyberChainBench",
+    "ref": "1cb7410395bb98f2a941d7fdab4882963ef68214"
+  },
+  "reevmbench": {
+    "repository": "blocksecteam/ReEVMBench",
+    "ref": "af878a75d628599736c78e8fe9655a57b041206e"
+  }
+}
