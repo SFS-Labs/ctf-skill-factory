@@ -32,3 +32,4 @@ Treffer sind Ähnlichkeit, kein Beweis.
 ## Kombination
 Zusammen mit: `not-so-smart-contracts`, `smart-contract-best-practices`, `slowmist-knowledge-base`, `ethernaut`, `seal-911`, `seal-frameworks`, `blockchain-security-contacts`.
 Nach diesem Skill weiter mit Layer L9.
+

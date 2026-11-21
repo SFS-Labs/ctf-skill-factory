@@ -32,3 +32,7 @@ Counterexample = harter Beweis. Sauberer Lauf = nur so gut wie die formulierte I
 ## Kombination
 Zusammen mit: `mev-inspect-py`, `transaction-decoder`, `rbuilder`, `not-so-smart-contracts`, `smart-contract-best-practices`, `slowmist-knowledge-base`, `ethernaut`.
 Nach diesem Skill weiter mit Layer L8.
+
+## Lokaler Zustand
+**Laeuft** (Selbstbau, kein Release-Asset vorhanden). Rezept: `recipes/cryo-build.sh`. Binary: `tools/cryo/bin/cryo`. Aufruf: `cryo help` bzw. `cryo blocks --blocks 19000000:19000000 -r <rpc>`.
+

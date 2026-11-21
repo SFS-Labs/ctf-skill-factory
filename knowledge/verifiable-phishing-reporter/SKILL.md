@@ -32,3 +32,4 @@ Graph/Report als Landkarte; Aussagen über Laufzeitverhalten sind daraus nicht a
 ## Kombination
 Zusammen mit: `seal-911`, `seal-frameworks`, `blockchain-security-contacts`, `slither`, `surya`, `bytecode-verifier`, `slither-mcp`.
 Nach diesem Skill weiter mit Layer L2.
+

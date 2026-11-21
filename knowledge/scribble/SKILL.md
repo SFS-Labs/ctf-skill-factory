@@ -32,3 +32,4 @@ Exit-Code plus Findings/Detektor-IDs. Jeder Treffer ist eine Hypothese; bestäti
 ## Kombination
 Zusammen mit: `echidna`, `medusa`, `properties`, `diligence-fuzzing`, `mythril`, `manticore`.
 Nach diesem Skill weiter mit Layer L4.
+

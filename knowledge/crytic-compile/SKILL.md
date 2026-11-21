@@ -32,3 +32,4 @@ Exit-Code plus Findings/Detektor-IDs. Jeder Treffer ist eine Hypothese; bestäti
 ## Kombination
 Zusammen mit: `solc-select`, `surya`, `solar`, `slither`, `surya`, `bytecode-verifier`, `slither-mcp`.
 Nach diesem Skill weiter mit Layer L2.
+

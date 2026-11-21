@@ -32,3 +32,4 @@ Text ist Muster, keine Messung: auf das Ziel abbilden und gegen Code prüfen.
 ## Kombination
 Zusammen mit: `smart-contract-best-practices`, `slowmist-knowledge-base`, `ethernaut`, `seal-911`, `seal-frameworks`, `blockchain-security-contacts`.
 Nach diesem Skill weiter mit Layer L9.
+

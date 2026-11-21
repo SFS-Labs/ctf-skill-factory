@@ -63,6 +63,12 @@ def main():
     for e in sorted(ref, key=lambda x: x["slug"]):
         lines.append(f"- `{e['slug']}` ({e['kind']}, {e['layer']}) — {e['install']}")
     fetched = sum(1 for e in skills if e["fetched"])
+    lines += ["", "## Nachgezogene Werkzeuge — Lauf wiederholen", "",
+              "| Tool | Rezept (Setup) | Beweis-Kommando |", "|---|---|---|",
+              "| `cryo` | `recipes/cryo-build.sh` | `cryo blocks --blocks 19000000 -r https://ethereum-rpc.publicnode.com -o /tmp/cryo-out` |",
+              "| `diffusc` | `recipes/diffusc-setup.sh` | `diffusc VaultV1.sol VaultV2.sol -d /tmp/out` (Dateiname = Contract-Name, `forge` im PATH) |",
+              "| `daedaluzz` | `recipes/daedaluzz-build.sh` | `cd /tmp && daedaluzz` → schreibt `generated-maze.sol` |",
+              "", "Ursachen, Patches und Rohausgaben: `VERIFICATION.md`, Abschnitt 'Nachtrag 2026-11-21'."]
     lines += ["", f"## Bezug", "", f"- {fetched}/{len(skills)} Skills mit Quellstand in `vendor/`"]
     missing = [e["slug"] for e in skills if not e["fetched"]]
     if missing:

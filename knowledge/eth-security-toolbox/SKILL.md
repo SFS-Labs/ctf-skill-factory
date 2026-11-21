@@ -32,3 +32,4 @@ Docker erforderlich — Rezept liegt in `recipes/eth-security-toolbox.sh`, hier 
 ## Kombination
 Zusammen mit: `slither`, `surya`, `bytecode-verifier`, `slither-mcp`, `echidna`, `medusa`, `properties`, `scribble`.
 Nach diesem Skill weiter mit Layer L3.
+

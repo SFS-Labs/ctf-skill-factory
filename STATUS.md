@@ -1,6 +1,6 @@
 # STATUS
 
-Stand: 2026-11-21 03:58
+Stand: 2026-11-21 04:18
 
 Verifikationsnachweis: siehe `VERIFICATION.md` (echte Laeufe, keine --help-Tests).
 Sicherung: privates Repo `SFS-Labs/ctf-skill-factory`; Wiederherstellung per `git clone` + `python3 bin/fetch`.
@@ -10,10 +10,10 @@ Sicherung: privates Repo `SFS-Labs/ctf-skill-factory`; Wiederherstellung per `gi
 
 | Skill | Binary | Status | Antwort |
 |---|---|---|---|
-| `cryo` | `cryo` | **FAIL** | nicht im PATH |
+| `cryo` | `cryo` | OK | cryo 0.3.2 |
 | `crytic-compile` | `crytic-compile` | OK | 0.4.2 |
-| `daedaluzz` | `daedaluzz` | **FAIL** | nicht im PATH |
-| `diffusc` | `diffusc` | **FAIL** | nicht im PATH |
+| `daedaluzz` | `daedaluzz` | OK | daedaluzz version 0.0.1 |
+| `diffusc` | `diffusc` | OK | 0.1.1 |
 | `echidna` | `echidna` | OK | Echidna 2.4.0 |
 | `etheno` | `etheno` | kein CLI-Flag (Bibliothek) | antwortet auf keinen Probe-Flag — Binary vorhanden |
 | `evm-cfg-builder` | `evm-cfg-builder` | kein CLI-Flag (Bibliothek) | antwortet auf keinen Probe-Flag — Binary vorhanden |
@@ -28,7 +28,7 @@ Sicherung: privates Repo `SFS-Labs/ctf-skill-factory`; Wiederherstellung per `gi
 | `solc-select` | `solc-select` | OK | usage: solc-select [-h] {install,use,versions,upgrade} ... |
 | `surya` | `surya` | OK | 0.4.13 |
 
-**14 ausfuehrbar, 3 fehlgeschlagen, 83 Referenz-Skills**
+**17 ausfuehrbar, 0 fehlgeschlagen, 83 Referenz-Skills**
 
 ## Referenz ohne Binary (bewusst)
 
@@ -115,6 +115,16 @@ Sicherung: privates Repo `SFS-Labs/ctf-skill-factory`; Wiederherstellung per `gi
 - `zellic-publications` (knowledge, L8) — keine Installation
 - `zk-eth-rng` (knowledge, L8) — keine Installation
 - `zkdocs` (knowledge, L8) — keine Installation
+
+## Nachgezogene Werkzeuge — Lauf wiederholen
+
+| Tool | Rezept (Setup) | Beweis-Kommando |
+|---|---|---|
+| `cryo` | `recipes/cryo-build.sh` | `cryo blocks --blocks 19000000 -r https://ethereum-rpc.publicnode.com -o /tmp/cryo-out` |
+| `diffusc` | `recipes/diffusc-setup.sh` | `diffusc VaultV1.sol VaultV2.sol -d /tmp/out` (Dateiname = Contract-Name, `forge` im PATH) |
+| `daedaluzz` | `recipes/daedaluzz-build.sh` | `cd /tmp && daedaluzz` → schreibt `generated-maze.sol` |
+
+Ursachen, Patches und Rohausgaben: `VERIFICATION.md`, Abschnitt 'Nachtrag 2026-11-21'.
 
 ## Bezug
 

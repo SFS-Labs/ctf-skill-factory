@@ -32,3 +32,7 @@ Counterexample = harter Beweis. Sauberer Lauf = nur so gut wie die formulierte I
 ## Kombination
 Zusammen mit: `oz-upgrades`, `chainsecurity-deployment-validation`, `bytecode-verifier`, `cryo`, `mev-inspect-py`, `transaction-decoder`, `rbuilder`.
 Nach diesem Skill weiter mit Layer L7.
+
+## Lokaler Zustand
+**Laeuft** (kein git noetig). Rezept: `recipes/diffusc-setup.sh` (Slither-Fork als Tarball + 2 Patches: pkg_resources.require, solc_select-User-Agent). Binary: `~/.local/bin/diffusc`. Aufruf: `diffusc VaultV1.sol VaultV2.sol -d out/` — Dateiname bestimmt den Contract-Namen (VaultV1 -> Vault), `forge` muss im PATH sein.
+

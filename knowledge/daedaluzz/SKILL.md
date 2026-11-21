@@ -32,3 +32,7 @@ Exit-Code plus Findings/Detektor-IDs. Jeder Treffer ist eine Hypothese; bestäti
 ## Kombination
 Zusammen mit: `echidna`, `medusa`, `properties`, `scribble`, `diligence-fuzzing`, `mythril`, `manticore`.
 Nach diesem Skill weiter mit Layer L4.
+
+## Lokaler Zustand
+**Laeuft** (Go, nicht Python). Rezept: `recipes/daedaluzz-build.sh` (Go 1.23.4 nach `~/.local/opt`). Binary: `~/.local/bin/daedaluzz`. Aufruf: `daedaluzz` im Zielverzeichnis -> schreibt `generated-maze.sol`.
+

@@ -39,3 +39,66 @@ ist damit empirisch, nicht nur behauptet.
 | `attacknet`, `eth-security-toolbox`, `cloudexec`, `paradigm-ctf-infra` | brauchen Docker; Rezepte liegen in `recipes/` |
 | `ida-evm`, `ethersplay` | IDA nicht installiert; Bytecode-Schicht läuft über `etheno`/`evmasm`/`evm-cfg-builder` |
 | Repo-Versionierung | kein `git` → Updates über `python3 bin/fetch` (authentifizierte Tarballs) |
+
+## Nachtrag 2026-11-21: cryo, diffusc, daedaluzz lauffähig gemacht
+
+Alle drei waren als "nicht lauffähig" dokumentiert. Die echten Ursachen waren andere als vermutet
+und sind hier mit Beweis-Kommando festgehalten.
+
+### daedaluzz — Go, nicht Python
+`go.mod` sagt `go 1.15`, es ist ein Go-Programm (`main.go`, Deps logrus + urfave/cli).
+Fix: Userspace-Go 1.23.4 nach `~/.local/opt` (kein Root), dann `go build` im vendor-Baum.
+Rezept: `recipes/daedaluzz-build.sh`.
+
+```
+$ cd /tmp/proof-daedaluzz && daedaluzz        # exit=0
+$ ls -l generated-maze.sol                     # 32560 bytes
+$ solc --bin generated-maze.sol | grep -c '^======= '   # 1 Contract (Maze) kompiliert
+```
+
+### diffusc — git war nie das Laufzeitproblem
+`setup.py` deklariert genau eine git-Abhängigkeit (`slither-analyzer@git+https://github.com/webthethird/slither.git@dev-diffusc-testing`).
+Der Code ruft nirgends git auf (grep über alle `*.py`). Fix: Fork als codeload-Tarball installieren,
+diffusc mit `--no-deps` dazu. Zwei Folgeprobleme mussten gelöst werden:
+
+1. `pkg_resources.require("diffusc")` → VersionConflict wegen der git-URL in `Requires-Dist`
+   → lokaler Patch: feste Version im `--version`-Zweig.
+2. `solc_select` fragt `binaries.soliditylang.org` per urllib **ohne User-Agent** an → HTTP 403
+   (sowohl `list.json` als auch der solc-Download via `urlretrieve`) → Patch mit UA-Header.
+
+Zusätzlich: `forge` muss im PATH sein, sonst wählt crytic-compile das Foundry-Plugin
+(`FileNotFoundError: 'forge'`), und der **Dateiname** bestimmt den Contract-Namen
+(`VaultV1.sol` → Contract `Vault`; `VaultA.sol` → IndexError).
+Rezept: `recipes/diffusc-setup.sh`.
+
+```
+$ diffusc /tmp/diffusc-src/VaultV1.sol /tmp/diffusc-src/VaultV2.sol -d /tmp/proof-diffusc
+  * tainted_functions: ...
+  * Fuzzing contract generated and written to /tmp/proof-diffusc/DiffFuzzUpgrades.sol
+  * Echidna configuration file generated and written to /tmp/proof-diffusc/CryticConfig.yaml
+My work here is done. Thanks for using me, have a nice day!
+```
+
+### cryo — kein Release-, sondern ein Header- und Compiler-Problem
+Die Releases-API von `paradigmxyz/cryo` hat genau ein Release (`0.2.0`) **ohne Assets** — ein
+fertiges Binary gibt es nicht, Selbstbau ist zwingend. Der Abbruch lag an zwei Dingen:
+
+1. `openssl-sys` (über alloy/reqwest, native-tls) braucht Dev-Header. `libssl.so.3` ist vorhanden,
+   `libssl-dev` nicht. `apt-get download libssl-dev` funktioniert **ohne Root**; mit `dpkg-deb -x`
+   nach `~/.local/openssl-dev` entpacken und `OPENSSL_INCLUDE_DIR`/`OPENSSL_LIB_DIR` setzen.
+   Wichtig: `opensslconf.h`/`configuration.h` liegen im Multiarch-Zweig
+   (`usr/include/x86_64-linux-gnu/openssl/`) und müssen nach `usr/include/openssl/` kopiert werden.
+2. Danach `ethnum 1.5.0`: `error[E0512]: cannot transmute between types of different sizes`
+   auf rustc 1.100 → `cargo update -p ethnum` (1.5.3).
+
+Rezept: `recipes/cryo-build.sh`.
+
+```
+$ cryo --version
+cryo 0.3.2
+$ cryo blocks --blocks 19000000 -r https://ethereum-rpc.publicnode.com -o /tmp/cryo-out
+- blocks collected: 1
+- rows written: 1
+$ ls /tmp/cryo-out/*.parquet
+ethereum__blocks__19000000_to_19000000.parquet      # 1 Row, Schema blocks
+```

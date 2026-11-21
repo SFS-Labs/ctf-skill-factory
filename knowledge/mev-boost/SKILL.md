@@ -32,3 +32,4 @@ Assertion-Verletzung mit Call-Sequenz; Coverage sagt, was überhaupt erreichbar 
 ## Kombination
 Zusammen mit: `cryo`, `mev-inspect-py`, `transaction-decoder`, `rbuilder`, `not-so-smart-contracts`, `smart-contract-best-practices`, `slowmist-knowledge-base`, `ethernaut`.
 Nach diesem Skill weiter mit Layer L8.
+

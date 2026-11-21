@@ -32,3 +32,4 @@ Text ist Muster, keine Messung: auf das Ziel abbilden und gegen Code prüfen.
 ## Kombination
 Zusammen mit: `cryo`, `mev-inspect-py`, `transaction-decoder`, `rbuilder`, `not-so-smart-contracts`, `smart-contract-best-practices`, `slowmist-knowledge-base`, `ethernaut`.
 Nach diesem Skill weiter mit Layer L8.
+

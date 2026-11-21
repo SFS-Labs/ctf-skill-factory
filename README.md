@@ -72,7 +72,20 @@ Wissen → Prozess). Sieben Regeln, u. a.: zwei unabhängige Signale pro Hypothe
 Counterexample > Pfad > Detektor > Muster, **Divergenz ist das Signal**, Negativraum führen.
 Details: `INDEX.md`, `VERIFICATION.md`, Freebuff-Skill `ctf-skill-index`.
 
+## Nachgezogene Werkzeuge (2026-11-21)
+
+Alle drei ehemals offenen Werkzeuge laufen jetzt ohne Root:
+
+| Werkzeug | Zustand | Rezept |
+|---|---|---|
+| `cryo` | laeuft (Selbstbau; Releases-API hat kein Asset) | `recipes/cryo-build.sh` |
+| `diffusc` | laeuft (kein git noetig; Slither-Fork als Tarball + 2 Patches) | `recipes/diffusc-setup.sh` |
+| `daedaluzz` | laeuft (ist Go, nicht Python; Userspace-Go 1.23.4) | `recipes/daedaluzz-build.sh` |
+
+Beweis-Laeufe und die genauen Ursachen stehen in `VERIFICATION.md`.
+
 ## Bekannte Grenzen
 
-`cryo` (openssl-sys/libssl-dev), `diffusc` (braucht git), `daedaluzz` (Go-Toolchain) laufen hier
-nicht; Docker-Skills sind Rezepte; IDA-Plugins sind Wissenskarten. Details in `VERIFICATION.md`.
+Docker-Skills (`attacknet`, `eth-security-toolbox`, `cloudexec`, `paradigm-ctf-infra`) sind Rezepte,
+IDA-Plugins (`ida-evm`, `ethersplay`) Wissenskarten — beides Plan-Entscheidung, keine Baustelle.
+Systemweit fehlt `git`; committet/gepusht wird ueber `dulwich`.

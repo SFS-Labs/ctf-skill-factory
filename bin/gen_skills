@@ -62,6 +62,16 @@ PAIRS = {
     "L9": ["seal-911", "seal-frameworks", "blockchain-security-contacts"],
 }
 NEXT = {"L0": "L1", "L1": "L2", "L2": "L3", "L3": "L4", "L4": "L5", "L5": "L6", "L6": "L7", "L7": "L8", "L8": "L9", "L9": "L2"}
+LOCAL_STATE = {
+    "cryo": "**Laeuft** (Selbstbau, kein Release-Asset vorhanden). Rezept: `recipes/cryo-build.sh`. "
+            "Binary: `tools/cryo/bin/cryo`. Aufruf: `cryo help` bzw. `cryo blocks --blocks 19000000:19000000 -r <rpc>`.",
+    "diffusc": "**Laeuft** (kein git noetig). Rezept: `recipes/diffusc-setup.sh` (Slither-Fork als Tarball + 2 Patches: "
+               "pkg_resources.require, solc_select-User-Agent). Binary: `~/.local/bin/diffusc`. "
+               "Aufruf: `diffusc VaultV1.sol VaultV2.sol -d out/` — Dateiname bestimmt den Contract-Namen (VaultV1 -> Vault), "
+               "`forge` muss im PATH sein.",
+    "daedaluzz": "**Laeuft** (Go, nicht Python). Rezept: `recipes/daedaluzz-build.sh` (Go 1.23.4 nach `~/.local/opt`). "
+                 "Binary: `~/.local/bin/daedaluzz`. Aufruf: `daedaluzz` im Zielverzeichnis -> schreibt `generated-maze.sol`.",
+}
 SIBLINGS = {
     "evmyullean-nethermind": "solidity-lean/evmyullean (gleicher Codebestand, Fork/Umzug) — als Divergenz-Vergleich nutzen, nicht als eigener Skill",
     "evmyullean": "solidity-lean (gleiche Semantik-Basis, Yul-Teil)",
@@ -201,6 +211,7 @@ pairs_with: [{", ".join(pairs)}]
 ## Kombination
 Zusammen mit: {", ".join("`"+p+"`" for p in pairs) if pairs else "—"}.
 Nach diesem Skill weiter mit Layer {NEXT[layer]}.
+{("\n## Lokaler Zustand\n" + LOCAL_STATE[slug] + "\n") if slug in LOCAL_STATE else ""}
 {("\n## Sibling\n" + SIBLINGS[slug] + "\n") if slug in SIBLINGS else ""}"""
         open(os.path.join(d, "SKILL.md"), "w").write(body)
         cards += 1
