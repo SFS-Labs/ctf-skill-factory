@@ -1,0 +1,80 @@
+name: SFS gateway one-shot integration smoke
+
+# Restricted to this one validation branch and this workflow's creation.
+# No changes to the manually dispatched production gateway.
+on:
+  push:
+    branches:
+      - validation/security-gateway-smoke-20261121
+    paths:
+      - .github/workflows/security-gateway-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  dual-source-smoke:
+    name: CyberChainBench + ReEVMBench (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit regression suite
+        run: python -m unittest discover -s benchmarks/tests -v
+      - name: Public source catalogs and real two-source smoke
+        run: |
+          mkdir -p benchmark-results
+          python benchmarks/gateway.py catalog --source cyberchainbench --output benchmark-results/catalog-cyberchainbench.json
+          python benchmarks/gateway.py catalog --source reevmbench --output benchmark-results/catalog-reevmbench.json
+          python benchmarks/gateway.py smoke --source cyberchainbench --output benchmark-results/smoke.json
+          python benchmarks/gateway.py prepare --source cyberchainbench --case-id bench-07 --phase detect --output benchmark-results/brief-cyberchainbench.json
+          python benchmarks/gateway.py prepare --source reevmbench --case-id 2023-07-pooltogether --phase detect --output benchmark-results/brief-reevmbench.json
+      - name: Grading adapters on empty synthetic submission
+        env:
+          SUBMISSION_JSON: '{"findings":[],"notes":"adapter-only smoke; no model finding"}'
+        run: |
+          python benchmarks/gateway.py grade --source cyberchainbench --case-id bench-01 --submission-json-env --output benchmark-results/grade-cyberchainbench.json
+          python benchmarks/gateway.py grade --source reevmbench --case-id 2023-07-pooltogether --submission-json-env --output benchmark-results/grade-reevmbench.json
+      - name: Validate artifacts and answer masking
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          base = Path('benchmark-results')
+          cyber = json.loads((base / 'catalog-cyberchainbench.json').read_text())
+          reevm = json.loads((base / 'catalog-reevmbench.json').read_text())
+          smoke = json.loads((base / 'smoke.json').read_text())
+          assert cyber['case_count'] >= 1 and reevm['case_count'] >= 1
+          assert {c['provenance']['benchmark'] for c in smoke['cases']} == {'cyberchainbench', 'reevmbench'}
+          for file in ('smoke.json', 'brief-cyberchainbench.json', 'brief-reevmbench.json'):
+              document = json.loads((base / file).read_text())
+              payloads = document['cases'] if 'cases' in document else [document]
+              for task in payloads:
+                  assert task['schema'] == 'sfs-benchmark-brief-v1'
+                  assert not any(k in task for k in ('fix_description', 'attack_txs', 'name', 'case_link'))
+                  assert not any(k in task['target'] for k in ('type', 'function', 'fix_description', 'attack_txs'))
+          for name in ('cyberchainbench', 'reevmbench'):
+              score = json.loads((base / f'grade-{name}.json').read_text())
+              assert score['reported_findings'] == 0
+              assert score['independent_reproduction'] == 'NOT_VERIFIED'
+          print('PASS: two upstream catalogs, two sources, sanitized briefs, both grading adapters')
+          PY
+      - name: Upload non-solution artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-gateway-dual-source-smoke
+          path: |
+            benchmark-results/catalog-*.json
+            benchmark-results/brief-*.json
+            benchmark-results/smoke.json
+          if-no-files-found: warn
+          retention-days: 3
