@@ -24,7 +24,7 @@ All output files are attached to the **individual Actions run as artifacts** (7-
 - `source=reevmbench`, `operation=prepare`, `case_id=2023-07-pooltogether`, `phase=detect`.
 - `operation=smoke`: exercises CyberChainBench `bench-01` and ReEVMBench `2024-06-thorchain` (including a missing-`base_commit` case).
 - `operation=grade` with `submission_json` set to the **frozen** Freebuff report:
-  `{"findings":[{"type":"accounting-error","function":"_calculateSwap","evidence_path":"test/PoC.t.sol"}],"notes":"Local evidence frozen before grading."}`
+  `{"findings":[{"type":"hypothesis-from-code","function":"function-under-investigation","evidence_path":"test/PoC.t.sol"}],"notes":"Local evidence frozen before grading."}`
   This format is illustrative, not a recommended finding. Do not feed benchmark answers into the auditor.
 
 For grading, `submission_json` avoids a second Git commit. Alternatively, `submission` may name an existing JSON file under `benchmarks/submissions/`. Output includes a SHA-256 of the frozen JSON.
