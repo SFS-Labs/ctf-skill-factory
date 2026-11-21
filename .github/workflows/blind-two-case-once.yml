@@ -1,0 +1,37 @@
+name: V7 blind two-case source bundle (one-shot)
+on:
+  push:
+    branches: [validation/blind-two-case-bundle-20261121]
+    paths: [.github/workflows/blind-two-case-once.yml]
+permissions:
+  contents: read
+jobs:
+  build-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prepare source-only blind package for both cases
+        run: |
+          bash -n benchmarks/package-blind-cases.sh
+          bash benchmarks/package-blind-cases.sh
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('benchmark-results/blind-two-cases')
+          for task in ('case-a/task.json','case-b/task.json'):
+              print(json.loads((root/task).read_text())['case'])
+          assert (root/'case-a/task.json').exists()
+          assert (root/'case-b/source/contracts/StablecoinDEX.sol').exists()
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v7-blind-two-cases-source-only
+          path: benchmark-results/blind-two-cases/
+          retention-days: 7
+          if-no-files-found: error
