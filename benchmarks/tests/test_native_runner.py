@@ -36,6 +36,12 @@ class NativeRunnerBoundaryTests(unittest.TestCase):
         self.assertEqual(outcome.returncode, 3, outcome.stderr)
         self.assertIn("frozen .sh", outcome.stderr)
 
+    def test_reevm_native_cli_uses_compatible_judge_alias_without_model_run(self):
+        script = SCRIPT.read_text()
+        self.assertIn("evmbench.solver.judge_model=gpt-5", script)
+        self.assertIn("evmbench.apply_gold_solution=False", script)
+        self.assertIn("evmbench.solver.agent_id=sfs-frozen-submission", script)
+
     def test_cyber_score_stages_pinned_forge_std(self):
         from json import loads
         root = SCRIPT.parent
