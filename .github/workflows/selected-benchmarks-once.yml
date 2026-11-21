@@ -1,0 +1,77 @@
+name: V7 public benchmark cases - blinded assignment and native readiness
+on:
+  push:
+    branches: [validation/selected-public-benchmarks-20261121]
+    paths: [.github/workflows/selected-benchmarks-once.yml]
+permissions:
+  contents: read
+jobs:
+  prepare-blinded-and-native:
+    name: ${{ matrix.source }} - ${{ matrix.case_id }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - source: cyberchainbench
+            case_id: bench-520
+          - source: reevmbench
+            case_id: 2026-01-tempo-stablecoin-dex
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v5
+        if: matrix.source == 'reevmbench'
+      - name: Unit and boundary regression
+        run: |
+          python -m unittest discover -s benchmarks/tests -v
+          bash -n benchmarks/run-native-exploit.sh
+      - name: Prepare actual public case without solution
+        env:
+          SOURCE: ${{ matrix.source }}
+          CASE_ID: ${{ matrix.case_id }}
+        run: |
+          mkdir -p benchmark-results/blind
+          python benchmarks/gateway.py prepare --source "$SOURCE" --case-id "$CASE_ID" --phase reproduce --output benchmark-results/blind/task.json
+          python - <<'PY'
+          import json, os, pathlib
+          task = json.loads(pathlib.Path('benchmark-results/blind/task.json').read_text())
+          serialized = json.dumps(task).lower()
+          assert task['task'] == 'historical-reproduction'
+          assert os.environ['CASE_ID'].lower() not in serialized
+          for forbidden in ('attack_txs','fix_description','attacker_profit','reference_exploit','vulnerability_ids','finding_id','gold.sh'):
+              assert forbidden not in serialized, forbidden
+          target=task['target']
+          if os.environ['SOURCE'] == 'cyberchainbench':
+              assert target['chain'] == 'bsc'
+              assert target['historical_block'] == 82730141
+              assert target['contract_address'].lower() == '0x62951cad7659393bf07fbe790cf898a3b6d317cb'
+          else:
+              assert target['source_commit'] == 'f66de060ec2bf899b2a54dd1d984fff4d9f20c4e'
+              assert target['source_repository'].startswith('https://github.com/evmbench-org/')
+          print('PASS: selected task is answer-masked and correct source pinned')
+          print(json.dumps(task,indent=2))
+          PY
+      - name: Load original official exploit harness for selected case
+        env:
+          SFS_NATIVE_OUTPUT: ${{ github.workspace }}/benchmark-results/native
+          SFS_CHECK_NATIVE_RUNTIME: ${{ matrix.source == 'reevmbench' && '1' || '0' }}
+        run: |
+          bash benchmarks/run-native-exploit.sh prepare '${{ matrix.source }}' '${{ matrix.case_id }}'
+      - name: Upload blinded-only assignment and proof of setup
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v7-task-${{ matrix.source }}
+          path: |
+            benchmark-results/blind/task.json
+            benchmark-results/native/upstream-revision.txt
+            benchmark-results/native/shared-runtime-revision.txt
+            benchmark-results/native/native-status.json
+          if-no-files-found: warn
+          retention-days: 7
