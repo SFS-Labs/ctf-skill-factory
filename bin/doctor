@@ -39,7 +39,9 @@ def probe(binary):
 def main():
     skills = json.load(open(os.path.join(ROOT, "manifest.json")))["skills"]
     lines = ["# STATUS", "", f"Stand: {time.strftime('%Y-%m-%d %H:%M')}", "",
-             "Verifikationsnachweis: siehe `VERIFICATION.md` (echte Laeufe, keine --help-Tests).", "",
+             "Verifikationsnachweis: siehe `VERIFICATION.md` (echte Laeufe, keine --help-Tests).",
+             "Sicherung: privates Repo `SFS-Labs/ctf-skill-factory`; Wiederherstellung per `git clone` + `python3 bin/fetch`.",
+             "`vendor/`, `venvs/`, `tools/`, `logs/` liegen bewusst **nicht** im Repo (siehe `README.md`).", "",
              "## Ausfuehrbare Skills", "", "| Skill | Binary | Status | Antwort |", "|---|---|---|---|"]
     ok = bad = 0
     for e in sorted(skills, key=lambda x: x["slug"]):

@@ -1,8 +1,10 @@
 # STATUS
 
-Stand: 2026-11-21 03:55
+Stand: 2026-11-21 03:58
 
 Verifikationsnachweis: siehe `VERIFICATION.md` (echte Laeufe, keine --help-Tests).
+Sicherung: privates Repo `SFS-Labs/ctf-skill-factory`; Wiederherstellung per `git clone` + `python3 bin/fetch`.
+`vendor/`, `venvs/`, `tools/`, `logs/` liegen bewusst **nicht** im Repo (siehe `README.md`).
 
 ## Ausfuehrbare Skills
 
