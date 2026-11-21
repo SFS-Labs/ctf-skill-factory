@@ -1,5 +1,5 @@
 name: Native official exploit harness two-source preparation
-# Retry: CyberChainBench module shadowing fixed in run-native-exploit.sh
+# Full runtime check: official ReEVMBench nanoeval/alcatraz dependency tree pinned
 
 on:
   push:
@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+        if: matrix.source == 'reevmbench'
       - name: Validate native harness runner
         run: |
           bash -n benchmarks/run-native-exploit.sh
@@ -36,6 +38,7 @@ jobs:
       - name: Execute original benchmark setup
         env:
           SFS_NATIVE_OUTPUT: ${{ github.workspace }}/benchmark-results/native
+          SFS_CHECK_NATIVE_RUNTIME: ${{ matrix.source == 'reevmbench' && '1' || '0' }}
         run: |
           bash benchmarks/run-native-exploit.sh prepare "${{ matrix.source }}" "${{ matrix.case }}"
       - name: Save provenance
