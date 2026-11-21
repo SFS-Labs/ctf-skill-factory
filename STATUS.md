@@ -1,6 +1,6 @@
 # STATUS
 
-Stand: 2026-11-21 04:18
+Stand: 2026-11-21 05:35
 
 Verifikationsnachweis: siehe `VERIFICATION.md` (echte Laeufe, keine --help-Tests).
 Sicherung: privates Repo `SFS-Labs/ctf-skill-factory`; Wiederherstellung per `git clone` + `python3 bin/fetch`.
@@ -125,6 +125,25 @@ Sicherung: privates Repo `SFS-Labs/ctf-skill-factory`; Wiederherstellung per `gi
 | `daedaluzz` | `recipes/daedaluzz-build.sh` | `cd /tmp && daedaluzz` → schreibt `generated-maze.sol` |
 
 Ursachen, Patches und Rohausgaben: `VERIFICATION.md`, Abschnitt 'Nachtrag 2026-11-21'.
+
+<!-- smoke:begin -->
+
+## Letzter Smoke-Lauf — 2026-11-21 05:39
+
+Automatisiert von `bin/smoke`: echte Laeufe in temporaeren Verzeichnissen, Artefakte inhaltlich geprueft.
+
+| Werkzeug | Ergebnis | Dauer | Beweis (Kernausgabe) |
+|---|---|---|---|
+| `cryo` | OK | 0.2 s | 1 Row, 8 Spalten, block_number=19000000 (3276 B) — pyarrow-Read |
+| `diffusc` | OK | 3.2 s | DiffFuzzUpgrades.sol (3254 B) + CryticConfig.yaml (92 B) |
+| `daedaluzz` | OK | 0.4 s | generated-maze.sol (32560 B), solc 0.8.19 kompiliert |
+| `push` | OK | 0.1 s | 6 synthetische Lecks redigiert (Token, URL-Userinfo, Bearer, Query) |
+
+4 OK.
+
+Wiederholen: `bin/smoke` — Kommandos im Detail: `bin/smoke --keep`.
+
+<!-- smoke:end -->
 
 ## Bezug
 

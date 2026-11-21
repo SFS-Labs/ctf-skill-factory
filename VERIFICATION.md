@@ -102,3 +102,26 @@ $ cryo blocks --blocks 19000000 -r https://ethereum-rpc.publicnode.com -o /tmp/c
 $ ls /tmp/cryo-out/*.parquet
 ethereum__blocks__19000000_to_19000000.parquet      # 1 Row, Schema blocks
 ```
+
+## Automatisierte Beweislaeufe — `bin/smoke` (2026-11-21)
+
+Die Nachweise oben sind ab jetzt reproduzierbar statt einmalig: `bin/smoke` faehrt sie in
+temporaeren Verzeichnissen und prueft die Artefakte **inhaltlich**, nicht nur auf Existenz.
+
+| Werkzeug | Kommando (so ruft `bin/smoke` es auf) | inhaltliche Pruefung |
+|---|---|---|
+| `cryo` | `cryo blocks --blocks 19000000 -r <rpc> -o <tmp>/out` | Parquet per pyarrow gelesen: 1 Row, 8 Spalten, `block_number == 19000000` |
+| `diffusc` | `diffusc <tmp>/VaultV1.sol <tmp>/VaultV2.sol -d <tmp>/out` | `DiffFuzzUpgrades.sol` enthaelt `contract`, `CryticConfig.yaml` nicht leer |
+| `daedaluzz` | `daedaluzz` im leeren Verzeichnis | `generated-maze.sol` > 5 kB, `pragma solidity` + `contract`, mit `solc --bin` kompiliert |
+| `push` | `bin/push --selftest` | sechs synthetische Lecks (dulwich-Erfolgszeile, URL-Userinfo, Bearer-Header, Query-Token) muessen redigiert sein; kein `LEAK` |
+
+Fixtures liegen jetzt im Repo: `corpora/smoke/VaultV1.sol` / `VaultV2.sol` (vorher nur unter `/tmp`).
+Ergebnis: `logs/smoke.json` (maschinenlesbar, nicht versioniert) und ein Block in `STATUS.md`,
+den `bin/doctor` beim Neuschreiben erhaelt.
+
+Beim Automatisieren gefunden und im Rezept vermerkt: diffusc bricht mit `IndexError` in
+`slither_provider.py:155` ab, wenn der Pfad **keinen** Verzeichnis-Separator enthaelt
+(`path.rsplit(os.sep, 1)[1]`) — also nie nackte Dateinamen uebergeben.
+
+`bin/smoke` endet mit Exit 0, wenn kein Werkzeug `FAIL` ist. `SKIP` heisst: Umgebung fehlt
+(Binary, `forge`, `solc` oder Netz) — kein bestandener Test, aber auch kein stilles Rot.

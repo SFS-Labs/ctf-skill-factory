@@ -20,6 +20,20 @@ ENTRY = {
     "forge": "forge", "cast": "cast", "anvil": "anvil", "uv": "uv",
 }
 PROBE = ["--version", "version", "--help", "-h"]
+SMOKE_BEGIN = "<!-- smoke:begin -->"
+SMOKE_END = "<!-- smoke:end -->"
+
+
+def read_smoke_block():
+    """Block des letzten bin/smoke-Laufs erhalten — doctor baut STATUS.md sonst neu."""
+    try:
+        text = open(os.path.join(ROOT, "STATUS.md")).read()
+    except OSError:
+        return ""
+    i, j = text.find(SMOKE_BEGIN), text.find(SMOKE_END)
+    if i < 0 or j < i:
+        return ""
+    return text[i:j + len(SMOKE_END)]
 
 
 def probe(binary):
@@ -69,6 +83,9 @@ def main():
               "| `diffusc` | `recipes/diffusc-setup.sh` | `diffusc VaultV1.sol VaultV2.sol -d /tmp/out` (Dateiname = Contract-Name, `forge` im PATH) |",
               "| `daedaluzz` | `recipes/daedaluzz-build.sh` | `cd /tmp && daedaluzz` → schreibt `generated-maze.sol` |",
               "", "Ursachen, Patches und Rohausgaben: `VERIFICATION.md`, Abschnitt 'Nachtrag 2026-11-21'."]
+    smoke = read_smoke_block()
+    if smoke:
+        lines += ["", smoke]
     lines += ["", f"## Bezug", "", f"- {fetched}/{len(skills)} Skills mit Quellstand in `vendor/`"]
     missing = [e["slug"] for e in skills if not e["fetched"]]
     if missing:

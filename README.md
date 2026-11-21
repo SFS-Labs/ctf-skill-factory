@@ -16,6 +16,8 @@ Rezepte, Wissenskarten, Router, Manifeste und den Verifikationsnachweis. Die sch
 | `bin/gen_skills` | erzeugt `knowledge/*/SKILL.md`, `MANIFEST.yaml`, `manifest.json`, `INDEX.md` |
 | `bin/doctor` | prüft jedes Binary, schreibt `STATUS.md` |
 | `bin/skill` | Router: `list`, `show`, `find`, `plan` |
+| `bin/push` | sichert den Stand im privaten Repo: Token nur aus `GH_TOKEN`/`GITHUB_TOKEN`, Ausgabe redigiert |
+| `bin/smoke` | wiederholt die drei Beweisläufe (cryo/diffusc/daedaluzz) plus den Redaktions-Selbsttest von `bin/push` und schreibt das Ergebnis nach `STATUS.md` |
 | `knowledge/<slug>/SKILL.md` | 134 Karten: Zweck, wann, Kommando, Deutung, blinde Flecken, Kombination |
 | `MANIFEST.yaml` / `manifest.json` | Quelle der Wahrheit (Slug, Layer, Trigger, Pairs, Blinds) |
 | `INDEX.md` | generierter Index nach Schichten L0–L9 |
@@ -52,6 +54,7 @@ python3 bin/fetch
 
 # 4. Pruefen
 python3 bin/doctor          # Status der Binaries
+bin/smoke                   # echte Beweislaeufe, Ergebnis landet in STATUS.md
 bin/skill list --layer=L3   # Router
 ```
 
@@ -64,6 +67,11 @@ bin/skill list --layer=L3   # Router
 Der GitHub-Token liegt **ausschließlich** unter `~/.config/gh-token` (chmod 600) und wird von
 `bin/fetch` / `bin/install_bin` zur Laufzeit gelesen. Er ist in `.gitignore` ausgeschlossen und
 steht in keiner getrackten Datei, keinem Log und keiner Commit-Message.
+
+`bin/push` ist strenger: es liest den Token **nicht** aus der Datei, sondern nur aus `GH_TOKEN`
+bzw. `GITHUB_TOKEN` der Umgebung, legt ihn nie in `argv` (sonst via `ps` sichtbar) und schickt jede
+Ausgabe — auch die stderr des Push-Workers — durch einen Redactor. `bin/push --selftest` prüft
+das gegen synthetische Lecks.
 
 ## Arbeitsweise (Kurzform)
 

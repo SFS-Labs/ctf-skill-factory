@@ -15,6 +15,10 @@
 #
 # Zusatz: forge muss im PATH sein, sonst waehlt crytic-compile das Foundry-Plugin und
 # scheitert mit FileNotFoundError: 'forge'. Alternativ Ziel ohne foundry.toml nutzen.
+#
+# Zusatz 2 (von bin/smoke gefunden): Pfade muessen einen Verzeichnis-Separator enthalten.
+#   slither_provider.py:155 rechnet path.rsplit(os.sep, 1)[1] -> bei "VaultV1.sol"
+#   IndexError: list index out of range. Also absolute Pfade uebergeben, nie nackte Dateinamen.
 set -euo pipefail
 H="${HOME}/ctf-skills"
 export PATH="${HOME}/.local/bin:${HOME}/.foundry/bin:${HOME}/.cargo/bin:${PATH}"
