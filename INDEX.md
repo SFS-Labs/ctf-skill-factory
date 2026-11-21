@@ -1,6 +1,6 @@
 # Skill-Index
 
-134 Skills · generiert 2026-11-21 03:54 · Home `/home/sfs-linux-node/ctf-skills`
+134 Skills · generiert 2026-11-21 04:08 · Home `/home/sfs-linux-node/ctf-skills`
 
 Abruf: `skill list` · `skill show <slug>` · `skill find <wort>` · `skill plan <ziel>`
 
