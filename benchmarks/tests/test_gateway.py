@@ -117,7 +117,7 @@ vulnerabilities:
 
     def test_reevm_catalog_from_split(self):
         with patch.object(gateway, "fetch_text",
-                          return_value="2023-07-pooltogether\\n2024-06-thorchain\\n"):
+                          return_value="2023-07-pooltogether\n2024-06-thorchain\n"):
             cat = gateway.catalog("reevmbench")
         self.assertEqual(cat["case_count"], 2)
         self.assertIn("2024-06-thorchain", cat["case_ids"])
