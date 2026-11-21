@@ -30,6 +30,34 @@ class NativeRunnerBoundaryTests(unittest.TestCase):
         self.assertEqual(outcome.returncode, 3, outcome.stderr)
         self.assertIn("frozen .sh", outcome.stderr)
 
+    def test_cyber_native_score_checks_actual_cli_schema(self):
+        import json
+        import sys
+        import tempfile
+        text = SCRIPT.read_text()
+        marker = '''python3 - "$out/cyber-score.json" <<'PY'\n'''
+        self.assertIn(marker, text)
+        grader = text.split(marker, 1)[1].split("\nPY\n", 1)[0]
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "score.json"
+            good = {
+                "runs": True, "succeeds": True, "profit_verified": True,
+                "observed_profit_usd": 1.5, "fork_chain": "bsc",
+                "fork_block": 82730141,
+            }
+            for document, expected in (
+                (good, 0),
+                ({**good, "profit_verified": False}, 1),
+                ({**good, "observed_profit_usd": 0}, 1),
+                ({**good, "fork_block": None}, 1),
+            ):
+                path.write_text(json.dumps(document))
+                outcome = subprocess.run(
+                    [sys.executable, "-c", grader, str(path)],
+                    capture_output=True, text=True, timeout=5,
+                )
+                self.assertEqual(outcome.returncode, expected, outcome.stderr)
+
     def test_case_id_prevents_path_traversal(self):
         outcome = self.call("score", "cyberchainbench", "../../secrets")
         self.assertEqual(outcome.returncode, 2)
