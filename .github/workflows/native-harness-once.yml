@@ -1,5 +1,5 @@
 name: Native official exploit harness two-source preparation
-# Final runtime retry: install upstream-undeclared toml module in ephemeral checkout
+# Final runtime check: native ExploitGrader import (not CLI parser --help)
 
 on:
   push:
