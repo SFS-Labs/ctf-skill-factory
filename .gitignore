@@ -1,0 +1,40 @@
+# --- Schwere Baum-Anteile: bewusst NICHT im Repo -------------------------
+# vendor/ wird per `python3 bin/fetch` wiederhergestellt (siehe README).
+vendor/
+venvs/
+tools/
+
+# --- Laufzeit-Artefakte --------------------------------------------------
+logs/
+__pycache__/
+*.pyc
+*.pyo
+
+# Forge / crytic Artefakte
+out/
+cache/
+crytic-export/
+broadcast/
+*.json.bak
+
+# --- Secrets: niemals versionieren --------------------------------------
+.env
+.env.*
+*.token
+*.secret
+gh-token
+.netrc
+.git-credentials
+token.txt
+
+# --- Editor / OS ---------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# --- Projekt-Zeiger (zeigt auf dieses Home, gehoert nicht ins Repo) -----
+.skills
+slither_results.json
+*.sarif
+.pytest_cache
