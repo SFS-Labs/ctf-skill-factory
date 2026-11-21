@@ -1,0 +1,52 @@
+name: Keyless BSC archive fallback probe (one-shot)
+on:
+  push:
+    branches: [validation/bsc-public-archive-fallbacks-20261121]
+    paths: [.github/workflows/bsc-archive-fallbacks-once.yml]
+permissions:
+  contents: read
+jobs:
+  historical-state:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: |
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          urls=[
+            "https://bsc.drpc.org",
+            "https://bsc-mainnet.public.blastapi.io",
+            "https://bsc.publicnode.com",
+            "https://api.blockvectra.com/v1/bsc_mainnet/public",
+            "https://rpc.ankr.com/bsc",
+            "https://bsc-pokt.nodies.app",
+            "https://bsc.1rpc.io",
+          ]
+          addr="0x62951CaD7659393BF07fbe790cF898A3B6d317CB"
+          storage_contract="0x33E29Cf3Bbf9d34bEF7707eAC459e31A152A41b2"
+          block=hex(82730141)
+          def rpc(url,method,params):
+              data=json.dumps({"jsonrpc":"2.0","method":method,"params":params,"id":1}).encode()
+              r=urllib.request.Request(url,data=data,headers={"Content-Type":"application/json","User-Agent":"SFS-readonly-BSC-archive-test"})
+              with urllib.request.urlopen(r,timeout=8) as f:
+                  return json.load(f)
+          for url in urls:
+              ok=[]
+              for method,params in [
+                  ("eth_getCode",[addr,block]),
+                  ("eth_getStorageAt",[storage_contract,hex(13),block]),
+              ]:
+                  try:
+                      response=rpc(url,method,params)
+                      v=response.get("result")
+                      valid=isinstance(v,str) and v.startswith("0x") and (len(v)>4 if method=="eth_getCode" else True)
+                      print(url,method, "PASS" if valid else "NO", "result_length",len(v) if isinstance(v,str) else None,"error",response.get("error"))
+                      ok.append(valid)
+                  except Exception as exc:
+                      print(url,method,type(exc).__name__,str(exc)[:130]);ok.append(False)
+              if all(ok):
+                  print("ARCHIVE_CODE_AND_STORAGE_PASS",url)
+          PY
