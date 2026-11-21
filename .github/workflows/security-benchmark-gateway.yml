@@ -1,0 +1,81 @@
+name: Security benchmark gateway
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Benchmark dataset
+        required: true
+        type: choice
+        options:
+          - cyberchainbench
+          - reevmbench
+      operation:
+        description: Prepare a blinded audit brief or grade a frozen submission
+        required: true
+        default: prepare
+        type: choice
+        options:
+          - prepare
+          - grade
+      case_id:
+        description: Upstream case ID (e.g. bench-01 or 2023-07-pooltogether)
+        required: true
+        type: string
+      phase:
+        description: Detect first; reproduce only after a blind report is frozen
+        required: true
+        default: detect
+        type: choice
+        options:
+          - detect
+          - reproduce
+      submission:
+        description: For grade only, JSON filename in benchmarks/submissions/
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-benchmark-gateway-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout gateway
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate brief or evaluate frozen submission
+        env:
+          SOURCE: ${{ inputs.source }}
+          OPERATION: ${{ inputs.operation }}
+          CASE_ID: ${{ inputs.case_id }}
+          PHASE: ${{ inputs.phase }}
+          SUBMISSION: ${{ inputs.submission }}
+        run: |
+          mkdir -p benchmark-results
+          if [ "$OPERATION" = "grade" ]; then
+            python benchmarks/gateway.py grade --source "$SOURCE" --case-id "$CASE_ID" \
+              --submission "$SUBMISSION" --output benchmark-results/grade.json
+          else
+            python benchmarks/gateway.py prepare --source "$SOURCE" --case-id "$CASE_ID" \
+              --phase "$PHASE" --output benchmark-results/brief.json
+          fi
+      - name: Upload result without reference solution
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ inputs.source }}-${{ github.run_id }}
+          path: benchmark-results/*.json
+          if-no-files-found: error
+          retention-days: 7
