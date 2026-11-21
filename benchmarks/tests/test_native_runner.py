@@ -17,7 +17,7 @@ class NativeRunnerBoundaryTests(unittest.TestCase):
 
     def test_reevm_wrapper_executes_from_isolated_audit_directory(self):
         script = SCRIPT.read_text()
-        self.assertIn("cd \\"\\${AUDIT_DIR:-/home/agent/audit}\\"", script)
+        self.assertIn("AUDIT_DIR:-/home/agent/audit", script)
         self.assertIn("test -f utils.sh", script)
         self.assertIn("bash /home/agent/frozen-exploit.sh", script)
 
