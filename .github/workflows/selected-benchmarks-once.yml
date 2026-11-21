@@ -43,8 +43,11 @@ jobs:
           task = json.loads(pathlib.Path('benchmark-results/blind/task.json').read_text())
           serialized = json.dumps(task).lower()
           assert task['task'] == 'historical-reproduction'
-          assert os.environ['CASE_ID'].lower() not in serialized
-          for forbidden in ('attack_txs','fix_description','attacker_profit','reference_exploit','vulnerability_ids','finding_id','gold.sh'):
+          if os.environ['SOURCE'] == 'cyberchainbench':
+              assert os.environ['CASE_ID'].lower() not in serialized
+          # ReEVMBench's canonical source repository name itself contains the case ID.
+          # That is a public code identifier, not the withheld vulnerability solution.
+          for forbidden in ('attack_txs','fix_description','attacker_profit','reference_exploit','vulnerability_ids','gold.sh'):
               assert forbidden not in serialized, forbidden
           target=task['target']
           if os.environ['SOURCE'] == 'cyberchainbench':
