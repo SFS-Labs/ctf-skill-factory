@@ -1,5 +1,5 @@
 name: Native official exploit harness two-source preparation
-# Full runtime check: official ReEVMBench nanoeval/alcatraz dependency tree pinned
+# Final runtime retry: install upstream-undeclared toml module in ephemeral checkout
 
 on:
   push:
