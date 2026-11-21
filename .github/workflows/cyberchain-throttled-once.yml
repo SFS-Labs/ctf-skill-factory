@@ -1,0 +1,69 @@
+name: CyberChainBench native historical fork through bounded read-only archive proxy
+
+# EVALUATOR-ONLY. Never label this as Freebuff output.
+on:
+  push:
+    branches: [validation/cyberchain-throttled-archive-20261121]
+    paths: [.github/workflows/cyberchain-throttled-once.yml]
+permissions:
+  contents: read
+jobs:
+  score-public-reference-on-historical-fork:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      SFS_NATIVE_OUTPUT: ${{ github.workspace }}/benchmark-results/native
+      BSC_RPC_URL: http://127.0.0.1:18546
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Validate runner and score contract
+        run: |
+          python3 -m unittest discover -s benchmarks/tests -v
+          bash -n benchmarks/run-native-exploit.sh
+          forge --version
+      - name: Freeze publicly available reference (evaluator-only)
+        run: |
+          mkdir -p benchmarks/submissions benchmark-results/calibration
+          ref=18c4aaf3549373b3c0f52dd0ed3e298264dbe1a8
+          root=https://raw.githubusercontent.com/SunWeb3Sec/DeFiHackLabs/$ref/src/test
+          curl -fsSL --retry 2 "$root/2026-02/LAXO_Token_exp.sol" -o benchmarks/submissions/evaluator-reference.sol
+          curl -fsSL --retry 2 "$root/basetest.sol" -o benchmarks/basetest.sol
+          curl -fsSL --retry 2 "$root/interface.sol" -o benchmarks/interface.sol
+          curl -fsSL --retry 2 "$root/tokenhelper.sol" -o benchmarks/tokenhelper.sol
+          sha256sum benchmarks/submissions/evaluator-reference.sol > benchmark-results/calibration/reference.sha256
+          echo "EVALUATOR REFERENCE ONLY: not a Freebuff V7 result" > benchmark-results/calibration/classification.txt
+      - name: Native CyberChainBench historical fork through local rate-limited proxy
+        run: |
+          python3 -m py_compile benchmarks/archive_rpc_proxy.py
+          python3 -u benchmarks/archive_rpc_proxy.py > benchmark-results/calibration/archive-proxy.log 2>&1 &
+          proxy_pid=$!
+          trap 'kill "$proxy_pid" 2>/dev/null || :' EXIT
+          python3 - <<'PY'
+          import time,urllib.request
+          for n in range(20):
+              try:
+                  assert urllib.request.urlopen("http://127.0.0.1:18546/",timeout=1).read()==b"OK"
+                  break
+              except Exception:
+                  time.sleep(.2)
+          else:
+              raise SystemExit("Read-only proxy did not start")
+          PY
+          bash benchmarks/run-native-exploit.sh score cyberchainbench bench-520 \
+            benchmarks/submissions/evaluator-reference.sol
+      - name: Upload evaluator-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyberchain-native-evaluator-calibration
+          path: |
+            benchmark-results/native/
+            benchmark-results/calibration/
+          if-no-files-found: warn
+          retention-days: 5
