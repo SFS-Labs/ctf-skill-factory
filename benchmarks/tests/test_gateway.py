@@ -55,7 +55,7 @@ class GatewayTest(unittest.TestCase):
         with patch.object(gateway, "fetch_text", side_effect=mocked):
             brief = gateway.prepare("cyberchainbench", "bench-01", "reproduce")
         self.assertEqual(brief["target"]["historical_block"], 12653565)
-        self.assertNotIn("_calculateSwap", json.dumps(brief))
+        self.assertNotIn("syntheticFunction", json.dumps(brief))
 
     def test_reevm_masks_finding(self):
         with patch.object(gateway, "fetch_text", side_effect=mocked):
