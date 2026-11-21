@@ -1,0 +1,44 @@
+name: Public BSC historical archive capability (read-only, one-shot)
+on:
+  push:
+    branches: [validation/bsc-public-archive-probe-20261121]
+    paths: [.github/workflows/public-bsc-archive-once.yml]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Query public keyless endpoints at historical BSC block
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          urls=[
+            "https://bsc-rpc.blockreq.com/v1/rpc/public",
+            "https://bsc-rpc.publicnode.com",
+            "https://bnb-mainnet.g.alchemy.com/public",
+            "https://bnb.api.onfinality.io/public",
+          ]
+          addr="0x62951CaD7659393BF07fbe790cF898A3B6d317CB"
+          block=hex(82730141)
+          successes=0
+          for url in urls:
+              payload=json.dumps({"jsonrpc":"2.0","id":1,"method":"eth_getCode","params":[addr,block]}).encode()
+              try:
+                  req=urllib.request.Request(url,data=payload,headers={"Content-Type":"application/json","User-Agent":"SFS-readonly-archive-probe"})
+                  with urllib.request.urlopen(req,timeout=12) as r:
+                      response=json.load(r)
+                  result=response.get("result")
+                  good=isinstance(result,str) and result.startswith("0x") and len(result)>4
+                  print(url,"historical_code", "PASS" if good else "UNAVAILABLE", "bytes", (len(result)-2)//2 if isinstance(result,str) else "none", "error",response.get("error"))
+                  successes+=int(good)
+              except Exception as exc:
+                  print(url,"ERROR",type(exc).__name__,str(exc)[:140])
+          print("HISTORICAL_ARCHIVE_READ_PASS_COUNT",successes)
+          if not successes:
+              raise SystemExit("No free public endpoint proved historical code availability")
+          PY
