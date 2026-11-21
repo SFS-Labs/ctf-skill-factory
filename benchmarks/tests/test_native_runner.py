@@ -15,6 +15,12 @@ class NativeRunnerBoundaryTests(unittest.TestCase):
             capture_output=True, text=True, timeout=5, check=False,
         )
 
+    def test_reevm_wrapper_executes_from_isolated_audit_directory(self):
+        script = SCRIPT.read_text()
+        self.assertIn("AUDIT_DIR:-/home/agent/audit", script)
+        self.assertIn("test -f utils.sh", script)
+        self.assertIn("bash /home/agent/frozen-exploit.sh", script)
+
     def test_shell_parses(self):
         check = subprocess.run(["bash", "-n", str(SCRIPT)],
                                capture_output=True, text=True, timeout=5)
