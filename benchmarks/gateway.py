@@ -79,9 +79,9 @@ def snapshot_head(repo_url: str) -> str:
         raise GatewayError("Unexpected source repository URL")
     owner, name = match.groups()
     data = fetch_github_json(
-        f"https://api.github.com/repos/{owner}/{name}/commits/HEAD"
+        f"https://api.github.com/repos/{owner}/{name}/commits?per_page=1"
     )
-    sha = data.get("sha", "") if isinstance(data, dict) else ""
+    sha = data[0].get("sha", "") if isinstance(data, list) and data else ""
     if not re.fullmatch(r"[a-fA-F0-9]{40}", sha):
         raise GatewayError("Cannot establish immutable source revision")
     return sha
