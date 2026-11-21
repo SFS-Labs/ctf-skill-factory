@@ -1,0 +1,47 @@
+name: Native official exploit harness two-source preparation
+
+on:
+  push:
+    branches: [validation/official-exploit-harness-20261121]
+    paths: [.github/workflows/native-harness-once.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  native-prepare:
+    name: ${{ matrix.source }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - source: cyberchainbench
+            case: bench-01
+          - source: reevmbench
+            case: 2023-07-pooltogether
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate native harness runner
+        run: |
+          bash -n benchmarks/run-native-exploit.sh
+          python3 -m unittest discover -s benchmarks/tests -v
+      - name: Execute original benchmark setup
+        env:
+          SFS_NATIVE_OUTPUT: ${{ github.workspace }}/benchmark-results/native
+        run: |
+          bash benchmarks/run-native-exploit.sh prepare "${{ matrix.source }}" "${{ matrix.case }}"
+      - name: Save provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-prepare-${{ matrix.source }}
+          path: benchmark-results/native/
+          retention-days: 3
+          if-no-files-found: warn
