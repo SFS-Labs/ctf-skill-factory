@@ -97,3 +97,25 @@ Beweis-Laeufe und die genauen Ursachen stehen in `VERIFICATION.md`.
 Docker-Skills (`attacknet`, `eth-security-toolbox`, `cloudexec`, `paradigm-ctf-infra`) sind Rezepte,
 IDA-Plugins (`ida-evm`, `ethersplay`) Wissenskarten — beides Plan-Entscheidung, keine Baustelle.
 Systemweit fehlt `git`; committet/gepusht wird ueber `dulwich`.
+## V8 — ausfuehrender Orchestrator (2026-11-22)
+
+V7 bleibt unveraendert. Neu ist `bin/skill-orchestrator.py`: Auswahl aus dem echten Katalog,
+ausfuehrbarer Graph, echte Werkzeugaufrufe, inhaltliche Evidenzpruefung und adaptive Recovery.
+
+```bash
+python3 bin/skill-orchestrator.py route  --task "<Aufgabe>"          # Kandidaten + DAG, keine Ausfuehrung
+python3 bin/skill-orchestrator.py plan   --task "<Aufgabe>" --target <datei.sol> [--project <dir>]
+python3 bin/skill-orchestrator.py run    --task "<Aufgabe>" --target <datei.sol> \
+        --project <dir> --out <evidenz> --allow-exec                  # echte Adapter, Receipts
+python3 bin/skill-orchestrator.py verify --report <evidenz>/evidence-report.json
+python3 bin/skill-orchestrator.py selfcheck                          # Katalog + Adapter + Negativproben
+python3 bin/compare-v7-v8                                            # reproduzierbarer V7/V8-Vergleich
+python3 -m unittest discover -s tests                                # 49 Tests
+```
+
+Zustaende: `DISCOVERED · SELECTED · READY · INVOKED · COMPLETED · FAILED · UNAVAILABLE ·
+VERIFIED · BLOCKED` (+ `KNOWLEDGE_ONLY`). Erfolg ist der Adaptervertrag, nicht die Zahl 0:
+`slither` 255 und `echidna` 1 sind Befunde. Ein Hash beweist Integritaet, nicht Wahrheit;
+`verify` prueft Assertion im Testrumpf, Negativkontrolle und State-Delta.
+
+Nachweise, Messwerte und Blocker: `docs/V8-REPORT.md`. Rueckfall: `docs/ROLLBACK.md`.

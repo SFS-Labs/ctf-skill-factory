@@ -148,3 +148,17 @@ Wiederholen: `bin/smoke` — Kommandos im Detail: `bin/smoke --keep`.
 ## Bezug
 
 - 134/134 Skills mit Quellstand in `vendor/`
+## V8 — Orchestrator (gemessen 2026-11-22)
+
+| Groesse | Wert |
+|---|---|
+| Katalogeintraege im Routing | 133 |
+| Adapter | 13 (surya, slither, slither-solc, myth, solc, forge, forge-match, echidna, echidna-solc, medusa, evmasm, diffusc, cryo) |
+| Tests | 49/49 OK (`SFS_V8_REAL=1` inkl. echtem Korpuslauf) |
+| Prototyp-Baseline | 16/16 OK, unveraendert |
+| Hauptlauf | `VERIFIED_LOCAL` — Slither 10 Detektoren (u. a. `reentrancy-eth`), 3 forge-Counterexamples, 1 Negativkontrolle, 2,9 s |
+| Recovery-Lauf ohne `forge` | Compiler-Diagnose → `slither --compile-force-framework solc` 12 Befunde; Verdict `STRUCTURAL_ONLY` (keine Falsifikation durch Echidna) |
+| V7/V8-Routing | Precision 0,224 → 0,586 · Recall 0,893 → 1,000 · gewaehlte Skills 11,75 → 5,38 · Fehlaktivierung ja → nein |
+
+Blocker: Freebuff-Desktop-Build ohne CLI-Tool-Call-Hook und ohne Trace-Ausgabe; `myth` laeuft
+auf diesem Node in den Timeout; `git` nicht im PATH, Token ungueltig. Details: `docs/V8-REPORT.md`.
