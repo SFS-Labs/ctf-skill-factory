@@ -5,6 +5,8 @@ set -euo pipefail
 PATCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${SFS_CTF_SKILLS_ROOT:-$HOME/ctf-skills}"
 TARGET="${FREEBUFF_SKILL_DIR:-$HOME/.agents/skills/ctf-skill-index}"
+V8_PROJECT_TARGET="$ROOT/.agents/skills/ctf-skill-index-v8"
+V8_SKILL_SOURCE="$PATCH_DIR/.agents/skills/ctf-skill-index-v8/SKILL.md"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
 if [[ ! -f "$ROOT/manifest.json" ]]; then
@@ -13,6 +15,11 @@ if [[ ! -f "$ROOT/manifest.json" ]]; then
 fi
 if [[ ! -f "$PATCH_DIR/bin/skill-orchestrator.py" ]]; then
   echo "ERROR: Orchestrator fehlt im Patch-Verzeichnis. Keine Aenderung." >&2
+  exit 2
+fi
+
+if [[ ! -f "$V8_SKILL_SOURCE" ]]; then
+  echo "ERROR: projektlokaler V8-Skill fehlt: $V8_SKILL_SOURCE" >&2
   exit 2
 fi
 
@@ -31,7 +38,8 @@ python3 -m py_compile "$PATCH_DIR/bin/skill-orchestrator.py"
 
 # 2. Bestehende Dateien sichern (kein Ueberschreiben ohne Backup).
 for dest in "$ROOT/bin/skill-orchestrator.py" "$ROOT/bin/compare-v7-v8" \
-            "$TARGET/SKILL.md" "$TARGET/references/v8-orchestration.md"; do
+            "$TARGET/SKILL.md" "$TARGET/references/v8-orchestration.md" \
+            "$V8_PROJECT_TARGET/SKILL.md"; do
   if [[ -f "$dest" ]]; then
     cp -p "$dest" "$dest.backup-$STAMP"
   fi
@@ -47,7 +55,7 @@ put() {
     install -m "$mode" "$src" "$dst"
   fi
 }
-mkdir -p "$ROOT/bin" "$ROOT/docs" "$ROOT/tests" "$TARGET/references"
+mkdir -p "$ROOT/bin" "$ROOT/docs" "$ROOT/tests" "$TARGET/references" "$V8_PROJECT_TARGET"
 put "$PATCH_DIR/bin/skill-orchestrator.py" "$ROOT/bin/skill-orchestrator.py" 755
 put "$PATCH_DIR/bin/compare-v7-v8" "$ROOT/bin/compare-v7-v8" 755
 put "$PATCH_DIR/tests/test_orchestrator.py" "$ROOT/tests/test_orchestrator.py" 644
@@ -58,6 +66,12 @@ put "$PATCH_DIR/docs/skill-orchestration-research.md" \
 
 # 4. Skill: V8-Dokument als Referenz, V7-Datei bleibt inhaltlich erhalten.
 put "$PATCH_DIR/skill/ctf-skill-index.SKILL.md" "$TARGET/references/v8-orchestration.md" 644
+# Eindeutiger V8-Name: projektlokal, ohne den gebuendelten Account-/V7-Skill zu ersetzen.
+put "$V8_SKILL_SOURCE" "$V8_PROJECT_TARGET/SKILL.md" 644
+if [[ "$(sed -n '2p' "$V8_PROJECT_TARGET/SKILL.md")" != "name: ctf-skill-index-v8" ]]; then
+  echo "ERROR: V8-Frontmatter passt nicht zum Skill-Verzeichnis." >&2
+  exit 2
+fi
 if [[ ! -s "$TARGET/SKILL.md" ]]; then
   put "$PATCH_DIR/skill/ctf-skill-index.SKILL.md" "$TARGET/SKILL.md" 644
 else
@@ -101,4 +115,4 @@ fi
 
 # 5. Nachweis: Tests und Selbsttest laufen, ohne externe Werkzeuge zu starten.
 ( cd "$PATCH_DIR" && python3 -m unittest discover -s tests >/dev/null )
-echo "INSTALLED. Tests gruen, V7-Backups vorhanden. Freebuff-Sitzung neu starten."
+echo "INSTALLED: eindeutiger projektlokaler V8-Skill, V7 erhalten. Tests gruen. Neue Freebuff-Sitzung fuer Runtime-Abnahme erforderlich."
