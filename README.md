@@ -210,3 +210,17 @@ Kein Auto-Merge, keine Veroeffentlichung. Details und Evidenz:
 - **PR-Erstellung:** Der Fine-grained-PAT darf keine Pull-Requests lesen oder
   schreiben (403); der Draft-PR wurde ueber die verbundene SFS-Labs-GitHub-App
   erstellt. Der Inhaltspush lief weiterhin ueber `bin/push`.
+
+## Freebuff V8: projektlokaler Skill ohne V7-Namenskollision
+
+Der eigenstaendige Skill `.agents/skills/ctf-skill-index-v8/SKILL.md` verwendet
+den Namen `ctf-skill-index-v8` und ueberschreibt weder den gebuendelten
+`ctf-skill-index`-V7-Skill noch den Account-Eintrag. Projektlokale Skills werden
+laut Freebuff-SDK in passenden Sitzungen vor globalen Skills aufgeloest.
+`install-freebuff.sh --apply` kopiert die V8-Datei in den Projektordner,
+behaelt V7/Backups und prueft weiterhin die lokalen Tests.
+
+**Runtime-Status:** Dateien und Projektanweisungen sind vorbereitet, aber
+neue Freebuff-Sitzung, automatischer `skill`-Aufruf und ein aus dieser Sitzung
+wirklich gestarteter V8-`run` muessen noch beobachtet werden.
+Abnahmeschritte: [docs/FREEBUFF-V8-RUNTIME-ACCEPTANCE.md](docs/FREEBUFF-V8-RUNTIME-ACCEPTANCE.md).
