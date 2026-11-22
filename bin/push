@@ -109,28 +109,53 @@ def api_visibility(repo, tok):
     return data.get("private"), data.get("default_branch")
 
 
-def local_head():
-    """HEAD ohne dulwich lesen — funktioniert mit jedem python3."""
-    head_file = os.path.join(ROOT, ".git", "HEAD")
+def git_dirs():
+    """Arbeitsbaum-Gitdir und gemeinsames Gitdir (linked worktree) ermitteln."""
+    dotgit = os.path.join(ROOT, ".git")
+    gd = dotgit
+    if os.path.isfile(dotgit):
+        try:
+            content = open(dotgit).read().strip()
+        except OSError:
+            content = ""
+        if content.startswith("gitdir: "):
+            gd = content[8:].strip()
+            if not os.path.isabs(gd):
+                gd = os.path.join(ROOT, gd)
+            gd = os.path.normpath(gd)
+    common = gd
     try:
-        head = open(head_file).read().strip()
+        rel = open(os.path.join(gd, "commondir")).read().strip()
+        common = os.path.normpath(os.path.join(gd, rel))
+    except OSError:
+        pass
+    return gd, common
+
+
+def local_head():
+    """HEAD ohne dulwich lesen — auch in einem linked worktree."""
+    gd, common = git_dirs()
+    try:
+        head = open(os.path.join(gd, "HEAD")).read().strip()
     except OSError:
         return ""
     if head.startswith("ref: "):
         ref = head[5:].strip()
-        try:
-            direct = open(os.path.join(ROOT, ".git", ref)).read().strip()
-            if re.fullmatch(r"[0-9a-f]{40}", direct):
-                return direct
-        except OSError:
-            pass
-        try:
-            packed = open(os.path.join(ROOT, ".git", "packed-refs")).read()
-        except OSError:
-            return ""
-        for line in packed.splitlines():
-            if line.endswith(" " + ref) and not line.startswith("#"):
-                return line.split()[0].strip()
+        for base in (gd, common):
+            try:
+                direct = open(os.path.join(base, ref)).read().strip()
+                if re.fullmatch(r"[0-9a-f]{40}", direct):
+                    return direct
+            except OSError:
+                pass
+        for base in (common, gd):
+            try:
+                packed = open(os.path.join(base, "packed-refs")).read()
+            except OSError:
+                continue
+            for line in packed.splitlines():
+                if line.endswith(" " + ref) and not line.startswith("#"):
+                    return line.split()[0].strip()
         return ""
     return head
 
