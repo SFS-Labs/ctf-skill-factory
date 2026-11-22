@@ -44,3 +44,6 @@ backups/
 .v8_staging/
 .v8_last_run
 .v8_backup_path
+
+# --- Copilot-Delegation: lokale Receipts, Policy, Standard-Cache ---------
+.copilot/

@@ -13,6 +13,7 @@ Teilbefehle:
     assess     strukturelle Evidenzpruefung (Hash/Existenz) + Inhaltsprüfung
     verify     inhaltliche, frische Verifikation aus Artefakten
     selfcheck  Katalog-, Adapter- und Evidenz-Selbsttest
+    copilot    GitHub-Copilot-Delegation (preflight/detect/delegate/watch/review)
 
 Grundsaetze: keine Shell, feste Argumentlisten mit ganzzahligen Platzhaltern,
 Prozessgruppe wird bei Timeout beendet, Logs sind gekappt, jeder Lauf erzeugt
@@ -1372,7 +1373,14 @@ def main():
     sc = sub.add_parser("selfcheck", help="Catalog, adapter and evidence-engine sanity checks")
     sc.add_argument("--root", type=Path, default=default_root())
 
-    args = parser.parse_args()
+    cp = sub.add_parser("copilot", help="GitHub Copilot delegation workflow (Freebuff-led)",
+                        add_help=False)
+    cp.add_argument("args", nargs=argparse.REMAINDER,
+                    help="subcommand and flags for bin/copilot-delegate.py")
+
+    args, extra = parser.parse_known_args()
+    if extra and args.cmd != "copilot":
+        parser.error("unrecognized arguments: " + " ".join(extra))
     try:
         if args.cmd == "route":
             if not (1 <= args.top_k <= 16):
@@ -1399,6 +1407,8 @@ def main():
                                      args.report.resolve().parent)
         elif args.cmd == "selfcheck":
             result = selfcheck(args.root)
+        elif args.cmd == "copilot":
+            sys.exit(run_copilot(list(args.args or []) + list(extra or [])))
         else:
             result = assess(json.loads(args.report.read_text(encoding="utf-8")),
                             args.report.resolve().parent)
@@ -1406,6 +1416,16 @@ def main():
     except (ValueError, OSError, json.JSONDecodeError) as exc:
         print(f"orchestrator error: {exc}", file=sys.stderr)
         sys.exit(2)
+
+
+def run_copilot(argv):
+    """Delegate to the Copilot layer in-process (no shell, same interpreter)."""
+    import importlib.util
+    path = Path(__file__).resolve().parent / "copilot-delegate.py"
+    spec = importlib.util.spec_from_file_location("sfs_copilot_delegate", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.main(list(argv or []))
 
 
 def selfcheck(root=None):

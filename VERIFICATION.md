@@ -33,9 +33,7 @@ ist damit empirisch, nicht nur behauptet.
 
 | Skill | Grund |
 |---|---|
-| `cryo` | `openssl-sys` braucht `libssl-dev` (Root); kein Release-Asset vorhanden |
-| `diffusc` | hängt an einem git-Fork von slither; `git` fehlt, Elevation nicht bestätigt |
-| `daedaluzz` | ist **Go** (nicht Python); keine Go-Toolchain installiert |
+| ~~`cryo`~~, ~~`diffusc`~~, ~~`daedaluzz`~~ | **behoben** (siehe Nachtrag unten): Selbstbau bzw. Userspace-Go, alle drei laufen |
 | `attacknet`, `eth-security-toolbox`, `cloudexec`, `paradigm-ctf-infra` | brauchen Docker; Rezepte liegen in `recipes/` |
 | `ida-evm`, `ethersplay` | IDA nicht installiert; Bytecode-Schicht läuft über `etheno`/`evmasm`/`evm-cfg-builder` |
 | Repo-Versionierung | kein `git` → Updates über `python3 bin/fetch` (authentifizierte Tarballs) |
@@ -125,6 +123,80 @@ Beim Automatisieren gefunden und im Rezept vermerkt: diffusc bricht mit `IndexEr
 
 `bin/smoke` endet mit Exit 0, wenn kein Werkzeug `FAIL` ist. `SKIP` heisst: Umgebung fehlt
 (Binary, `forge`, `solc` oder Netz) — kein bestandener Test, aber auch kein stilles Rot.
+
+## Endzustand 2026-11-21 (gemessen, nicht behauptet)
+
+`bin/doctor` ruft jeden der 51 Werkzeug-Einträge einzeln auf, prüft 133 Vendor-Bäume samt
+`.fetched`-Marker, 133 Wissenskarten auf die sechs Pflichtabschnitte und die Wrapper im PATH:
+
+```
+ok=22 lib=3 ref=26 fail=0 | vendor=133/133 karten=133/133 | skills=133 quellen=134 alias=1
+```
+
+Differenz Manifest → vendor-Baum: **0** (jeder Eintrag hat Baum und lesbaren Marker;
+`exploitdb` bewusst nur als CSV-Index, weil das GitHub-Repo archiviert und geleert ist).
+
+### 133 gegen 134: der Fork-Alias
+
+`repos.tsv` enthält **134** Quellen. `NethermindEth/EVMYulLean` hat denselben Baum wie
+`paradigmxyz/evmyullean` und wird deshalb nicht als zweiter Skill gehalten. Der Beweis ist eine
+Zeile, keine Prosa: `repos.tsv` trägt
+`alias_of=evmyullean; tree_sha256=f27de34679ad5b6573a3ff387f14405b88f7bb98eb8fcc4c54a9a156c1210126; files=109`.
+Derselbe Digest wird
+
+- von `bin/doctor` bei jedem Lauf über den aktuellen `vendor/`-Baum gerechnet,
+- von `bin/alias-check` zusätzlich anonym gegen
+  `github.com/NethermindEth/EVMYulLean/archive/HEAD.tar.gz` geprüft,
+- von `bin/gen_skills` verweigert, wenn Baum und Pin auseinanderlaufen.
+
+`bin/fetch` legt für Alias-Zeilen keinen zweiten Klon an; `bin/gen_skills` schreibt die
+Alias-Records (`slug`, `repo`, `tree_sha256`, `files`) ins Manifest und in die Karte, und
+Baum/Karte existieren nur einmal. Ändert sich der Upstream-Baum, wird der Lauf rot, bis
+`bin/alias-check --update` den neuen Digest nach erfolgreicher Remote-Prüfung pinnt — kein
+datierter Behauptungssatz.
+
+Damit: **134 Quellen − 1 Alias = 133 Skills = 133 Bäume = 133 Karten = Plansoll**. Der Plan-Satz
+„EVMYulLean/solidity-lean = ein Skill" war ungenau: `solidity-lean` ist ein eigenständiges Repo
+(andere Semantik-Ebene) und bleibt ein eigener Skill.
+
+### Was dabei repariert wurde (Ursachen, nicht Symptome)
+
+| Befund | Ursache | Fix |
+|---|---|---|
+| `etheno`, `evm-cfg-builder`, `fuzz-utils`, `mev-inspect`: `ModuleNotFoundError: pkg_resources` | `setuptools>=81` hat `pkg_resources` entfernt | uv-Tools mit `--with 'setuptools<81'` neu installiert |
+| `etheno` nach `--force`: `pysha3` baut nicht | `pysha3` unterstützt Python 3.12 nicht | `--python 3.10` |
+| `legions`: `FileFinder.find_module` fehlt | `nubia` nutzt die in 3.12 entfernte API | `--python 3.9` |
+| `inspect-block`: `No module named 'cli'`, dann `sqlalchemy`, dann `getargspec` | 2021er-Projekt, Entry-Point importiert Repo-Root-Modul und Postgres-Stack, Code nicht 3.11+-fähig | Installation aus `vendor/`, `--python 3.10`, `sqlalchemy`+`psycopg2-binary`, Repo-Root per `.pth` |
+| `forge`, `cast`, `anvil`, `solar` „nicht im PATH" | foundry legt sie nur in `~/.foundry/bin` ab | Symlinks nach `~/.local/bin` (statt rc-Änderung) |
+| `skill`-Wrapper fehlte | Symlink nie angelegt | `~/.local/bin/skill -> bin/skill` |
+| `iron-proxy`, `mev-boost` als Referenz geführt | vorgebaute `linux_amd64`-Assets waren ungenutzt | Release-Tarball nach `tools/`, Symlink, Aufruf verifiziert |
+| STATUS zählte 17 ausführbar + 83 Referenz = 100 von 134 | `doctor` kannte nur 23 Slugs und ließ 28 still fallen | `doctor` klassifiziert jetzt **alle** 51 Werkzeug-Einträge in AUSFÜHRBAR / BIBLIOTHEK / REFERENZ und exitet 1 bei jeder unklassifizierten Zeile |
+
+### End-to-End-Lauf eines Rezepts gegen einen geholten Skill
+
+`recipes/slither-vendor.sh` (Default-Slug `evmyullean`) löst den Slug über `manifest.json` auf,
+kopiert `EvmYul/Yul/YulSemanticsTests/Storage.sol` aus `vendor/paradigmxyz/evmyullean` in ein
+temporäres Verzeichnis und analysiert mit dem gepinnten `solc 0.8.19`:
+
+```
+slither : Storage.sol analyzed (2 contracts with 102 detectors), 3 result(s) found
+Ergebnis: 3 Befund(e) im JSON   # solc-version, 2x low-level-calls
+```
+
+Laufzeit 1,0 s, Exit 0. `bin/smoke` bestätigt zusätzlich die vier Beweisläufe
+(cryo, diffusc, daedaluzz, Redaktions-Selbsttest) mit `4 OK`.
+
+### Was offen bleibt (Blocker mit nächstem Schritt)
+
+- **GitHub-Token ungültig** (HTTP 401 `Bad credentials`, Datei unverändert vom 03:21): neue
+  fine-grained PAT mit `Contents: Read and write` auf `SFS-Labs/ctf-skill-factory`, Eingabe per
+  `ctf-token`. Öffentliche Quellen werden anonym gelesen (HTTP 200), `bin/fetch` läuft also weiter.
+- **Zehn Release-Binaries ohne Linux-Artefakt** (`bytecode-verifier`, `diligence-fuzzing`,
+  `dstack`, `fluxture`, `mev-boost-relay`, `mev-share-rs`, `optik`, `r55`, `rollup-boost`,
+  `soroban-detectors`): Referenz mit Quellbaum; nächster Schritt ist `cargo build`/`go build`
+  im jeweiligen `vendor/`-Baum. Nicht im Plan vorgesehen, deshalb nicht gebaut.
+- **Docker** (4 Skills) und **IDA** (`ida-evm`) bleiben Referenz; Rezepte bzw. Karten liegen bereit.
+
 ## V8 — echte Orchestrator-Laeufe (2026-11-22)
 
 ### Integritaet des Eingabepakets
@@ -157,3 +229,33 @@ den `crytic-compile`/`forge`-Stack und sind daher keine unabhaengigen Signale.
 
 Freebuff-Aktivierung ist modellvermittelt; dieser Build hat keinen Tool-Call-Hook und keine
 Trace-Ausgabe. `myth` ueberschreitet 60 s und wird als Blocker gefuehrt.
+
+## Copilot-Delegation (2026-11-22, lokal getestet)
+
+Geprueft wurde die Delegationsschicht `bin/copilot-delegate.py` mit echten Lesezugriffen
+und einem lokalen HTTP-Mock fuer alle Schreibpfade. **Es gab keine echte
+Copilot-Delegation.**
+
+| Pruefung | Ergebnis |
+|---|---|
+| `GET /user`, `GET /rate_limit` | 200, Login `SFS-Labs` |
+| Repository `SFS-Labs/ctf-skill-factory` | 200, privat, `has_issues=false`, Admin-Recht |
+| `suggestedActors` | `copilot-swe-agent` / `BOT_kgDOC9w8XQ` assignbar |
+| Agent-Tasks User-Scope | 200, leer |
+| Agent-Tasks Repo-Scope | 403, fehlendes Token-Recht |
+| Issues-API | 403, Fine-grained-Token ohne Issues-Recht |
+| Standard-Quelle `SFS-Labs/sfs-ai-development-gateway` | PAT 404; verbundene GitHub-App 200; verbatim vendored (Blob `277ad8a`, SHA-256 `b8d0548`) |
+| Kontingent-Gate | geschlossen (`credits_exhausted=true`) |
+
+Mock-Lebenszyklus (echter HTTP-Client, echte Zustandsmaschine, echte Review-Logik):
+
+| Szenario | Ergebnis |
+|---|---|
+| happy (Issue), agent-task, rate-limit | `REVIEWED` / `VERIFIED` |
+| ci-failure, scope-violation, secret | `CHANGES_REQUIRED` mit Befund |
+| quota | `QUOTA_BLOCKED` |
+| timeout | `WATCH_LIMIT_REACHED` |
+
+`python3 -m unittest discover -s tests`: **84 Tests, 1 Skip** (opt-in `SFS_V8_REAL`).
+Davon 35 neue Copilot-Tests. Alle Mock-Laeufe: `paid_spend=0`, `real_api_calls=0`,
+`proven_domains=0`. Details: `docs/COPILOT-DELEGATION.md`.
