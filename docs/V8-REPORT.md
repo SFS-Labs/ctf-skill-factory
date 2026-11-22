@@ -230,3 +230,41 @@ V8-Dateien werden aus `*.backup-<stamp>` bzw. `backups/pre-v8-*.tar.gz` zurueckg
 | Vergleich | `logs/compare-v7-v8-20261121T231200Z.json` | |
 | Backup | `backups/pre-v8-20261121T225722Z.tar.gz` | |
 | Installierte Skill-Datei | `~/.agents/skills/ctf-skill-index/SKILL.md` | |
+
+---
+
+## 13. Nachtrag 2026-11-22 — GitHub-Stand und Freebuff-Skill-Kollision
+
+**Dieser Nachtrag hat Vorrang vor den historischen GitHub-/Token-Angaben in Abschnitt 2 und 9.**
+
+- Der zuvor fehlgeschlagene GitHub-Transport wurde spaeter ueber das bestehende
+  redigierende `bin/push` mit bereits vorhandenem Token funktionsfaehig gemacht.
+- Der V8-Branch `v8/adaptive-orchestrator` wurde mit Commit
+  `24394eb7ee518556d1cdb3f29e29f2df37203c6d` erfolgreich gepusht.
+- Die seinerzeit 22 fehlenden `main`-Commits wurden bereits im separaten
+  Integrationsbranch `v9/copilot-delegation-integration` beruecksichtigt.
+  Dieser baut auf `main` `ff27da99c2b86a9d808f7e38986e8a86b333e986` auf.
+- Draft-PR [#6](https://github.com/SFS-Labs/ctf-skill-factory/pull/6) existiert.
+  Weder `main` noch der historische V8-Branch wurden gemergt beziehungsweise
+  durch die nachtraegliche Runtime-Arbeit ersetzt.
+- Die Freebuff-Account-Skill-Definition wurde laut lokalem Probeversuch
+  gespeichert. `cloud_read_skill` ist aber fuer account-only Skills kein
+  zuverlaessiger Readback: der gleichnamige gebuendelte V7-Skill kann den
+  Eintrag bei der Abfrage ueberschatten.
+- Der im GitHub-Code von Freebuff dokumentierte Projektpfad
+  `.agents/skills/<skill-name>/SKILL.md` und die Prioritaet projektlokaler
+  Skills sind die Basis fuer den neuen eindeutigen Skill
+  `.agents/skills/ctf-skill-index-v8/SKILL.md`.
+- `install-freebuff.sh` installiert diesen Skill im Projekt, ohne
+  `ctf-skill-index` V7 zu loeschen. Tests der Dateistruktur sind hinzugefuegt.
+- **Offen:** In diesem Chat besteht kein steuerbarer Zugriff auf eine neue
+  Freebuff-Desktop-Sitzung. Automatische Skill-Aktivierung und realer V8-
+  Orchestrator-Aufruf durch einen neu gestarteten Agenten sind daher
+  `RUNTIME_UNVERIFIED`, nicht `PASS`.
+- Vorliegende 84 lokalen Tests (1 Skip) stammen aus dem abgeschlossenen V9-Run.
+  Die nachtraeglich ergaenzten Skill-Vertragstests muessen auf dem Node erneut
+  zusammen mit der Gesamtsuite ausgefuehrt werden.
+- Copilot-Delegation und Proficiency sind getrennt. Keine echten
+  Copilot-Delegationen, kein zusaetzlicher Credit-Verbrauch, kein Auto-Merge.
+
+Abnahmeverfahren: `docs/FREEBUFF-V8-RUNTIME-ACCEPTANCE.md`.
