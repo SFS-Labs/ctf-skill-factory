@@ -1,9 +1,24 @@
 # Copilot-Delegation - Freebuff fuehrt, Copilot arbeitet begrenzt
 
-**Status: lokal getestet.** Es gab noch keine echte Copilot-Delegation. Alle
-Ablaeufe in diesem Dokument liefen gegen simulierte GitHub-Antworten; echte
-Lesezugriffe sind als solche gekennzeichnet. Damit ist die Integration
-nachgewiesen, nicht ein Copilot-Beitrag.
+**Status: `IMPLEMENTED` · `LOCALLY_TESTED` · `MOCK_VERIFIED` ·
+`RUNTIME_VERIFIED` (nur AGENTS.md-Ladepfad) · `LIVE_DELEGATION_BLOCKED`.** Es gab
+noch keine echte Copilot-Delegation. Alle Ablaeufe in diesem Dokument liefen
+gegen simulierte GitHub-Antworten; echte Lesezugriffe sind als solche
+gekennzeichnet. Damit ist die Integration nachgewiesen, nicht ein
+Copilot-Beitrag. `PRODUCTION_VERIFIED` ist nicht erreicht.
+
+## Integration
+
+- **Branch:** `v9/copilot-delegation-integration`, Basis `main` `ff27da99`
+- **Commits:** `3d15920` (V8 + V9 + V7-Katalog), `deac305` (Worktree-Push-Fix)
+- **Draft-PR:** [#6](https://github.com/SFS-Labs/ctf-skill-factory/pull/6)
+- **Tests:** 84 Tests, 1 Skip; `selftest` 8/8, `real_api_calls=0`,
+  `paid_spend=0`; `selfcheck` OK; `bin/push --check` MATCH
+- **AGENTS.md:** Der Orchestrator laedt die Datei beim Session-Start ueber
+  `deriveKnowledgeFiles` als Projektanweisung. Eine neue Sitzung wurde nicht
+  automatisiert gestartet; die Modellaktivierung ist nicht erzwungen.
+- **PR-Erstellung:** Der PAT darf keine PR-API (403); die verbundene
+  SFS-Labs-GitHub-App hat den Draft-PR erstellt. Kein Merge.
 
 ## Warum
 
@@ -189,7 +204,10 @@ meldet fuer Simulationen `proven_domains=0` und `simulated_excluded>0`.
 ## Grenzen
 
 - Keine echte Delegation getestet; Credits und Token-Rechte fehlen.
-- Der Fine-grained-PAT kann das private Gateway nicht lesen (`404`). Der Standard
+- Der Fine-grained-PAT kann das private Gateway nicht lesen (`404`) und keine
+  Pull-Requests lesen/schreiben (`403`). Der Draft-PR wurde ueber die verbundene
+  GitHub-App erstellt; der Push lief ueber `bin/push`.
+- Der Standard
   wurde ueber die verbundene GitHub-App abgerufen, verbatim vendored und per
   Blob-/SHA-256 geprueft; das CLI nutzt diese Fassung und weist den PAT-Status
   separat aus.

@@ -157,7 +157,7 @@ VERIFIED · BLOCKED` (+ `KNOWLEDGE_ONLY`). Erfolg ist der Adaptervertrag, nicht 
 
 Nachweise, Messwerte und Blocker: `docs/V8-REPORT.md`. Rueckfall: `docs/ROLLBACK.md`.
 
-## V9 — Copilot-Delegation (2026-11-22, lokal getestet)
+## V9 — Copilot-Delegation (2026-11-22, integriert)
 
 Freebuff bleibt die einzige Oberflaeche und der fuehrende Orchestrator. `bin/copilot-delegate.py`
 delegiert klar abgegrenzte Teilaufgaben ueber die GitHub-Issue-API an
@@ -183,3 +183,29 @@ Das kostenpflichtige Gate ist standardmaessig geschlossen (`paid_delegation_allo
 Kein Auto-Merge, keine Veroeffentlichung. Details und Evidenz:
 `docs/COPILOT-DELEGATION.md`, Standard: `docs/COPILOT_PROFICIENCY_OPERATING_STANDARD.md`
 (verbatim) plus `docs/COPILOT-PROFICIENCY-STANDARD.md` (lokale Ergaenzung).
+
+### Integration (2026-11-22)
+
+- **Basis:** `main` `ff27da99` einschliesslich der neuen `benchmarks/`- und
+  `.github/`-Komponenten. Der V8-Commit wurde als `2845b72` auf `main`
+  nachgezogen; der V7-Katalog (133 Karten, Alias-Beweis, Tool-Matrix) ist mit
+  versioniert, damit README und Manifeste konsistent bleiben.
+- **Branch:** `v9/copilot-delegation-integration`
+- **Commits:** `3d15920` (Integration) und `deac305` (Worktree-Push-Fix)
+- **Draft-PR:** [#6](https://github.com/SFS-Labs/ctf-skill-factory/pull/6)
+  gegen `main`, 173 Dateien; nur Review, kein Merge.
+- **Tests:** `python3 -m unittest discover -s tests` -> 84 Tests, 1 Skip, OK;
+  `selftest` -> 8/8 Mock-Szenarien, `real_api_calls=0`, `paid_spend=0`;
+  `selfcheck` -> Katalog/Adapter/Negativproben OK;
+  `bin/push --check` -> lokal = remote.
+- **Runtime:** Der installierte Orchestrator laedt `AGENTS.md` beim
+  Session-Start als Projektanweisung (Code-Pfad `deriveKnowledgeFiles` ->
+  `knowledgeFiles` -> Projektinstructions). Diese Sitzung begann vor Anlage der
+  Datei; eine neue Freebuff-Sitzung wurde nicht automatisiert gestartet. Damit
+  ist `RUNTIME_VERIFIED` nur fuer den Ladepfad belegt, **nicht** fuer eine
+  erzwungene Modellaktivierung.
+- **Status:** `IMPLEMENTED`, `LOCALLY_TESTED`, `MOCK_VERIFIED`;
+  `LIVE_DELEGATION_BLOCKED`; `PRODUCTION_VERIFIED` nicht erreicht.
+- **PR-Erstellung:** Der Fine-grained-PAT darf keine Pull-Requests lesen oder
+  schreiben (403); der Draft-PR wurde ueber die verbundene SFS-Labs-GitHub-App
+  erstellt. Der Inhaltspush lief weiterhin ueber `bin/push`.

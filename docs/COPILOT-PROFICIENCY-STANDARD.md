@@ -44,3 +44,13 @@ ist ein optionaler Executor fuer klar abgegrenzte, unabhaengig pruefbare Aufgabe
 
 Ausfuehrung und Nachweise: `bin/copilot-delegate.py`,
 `docs/COPILOT-DELEGATION.md`, `VERIFICATION.md`.
+
+## Nachweisstand (2026-11-22)
+
+`IMPLEMENTED` · `LOCALLY_TESTED` · `MOCK_VERIFIED` · `RUNTIME_VERIFIED` (nur
+AGENTS.md-Ladepfad) · `LIVE_DELEGATION_BLOCKED`. Der Integrationsbranch
+`v9/copilot-delegation-integration` basiert auf `main` `ff27da99`; Draft-PR
+[#6](https://github.com/SFS-Labs/ctf-skill-factory/pull/6). 84 Tests (1 Skip),
+8/8 Mock-Szenarien, `real_api_calls=0`, `paid_spend=0`. Es gibt keine belegte
+Copilot-Aktivitaet und kein Proficiency-Level; `PRODUCTION_VERIFIED` ist nicht
+erreicht.

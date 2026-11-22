@@ -259,3 +259,37 @@ Mock-Lebenszyklus (echter HTTP-Client, echte Zustandsmaschine, echte Review-Logi
 `python3 -m unittest discover -s tests`: **84 Tests, 1 Skip** (opt-in `SFS_V8_REAL`).
 Davon 35 neue Copilot-Tests. Alle Mock-Laeufe: `paid_spend=0`, `real_api_calls=0`,
 `proven_domains=0`. Details: `docs/COPILOT-DELEGATION.md`.
+
+## Integration V9 (2026-11-22)
+
+Der Integrationsstand liegt auf `v9/copilot-delegation-integration`, aufgebaut auf
+`main` `ff27da99` (22 Commits neuer als der alte V8-Branch). Der V8-Commit wurde
+als `2845b72` konfliktfrei nachgezogen; der lokale V7-Katalog und das Tooling
+wurden mit versioniert, weil `main` in den 22 Commits ausschliesslich
+`benchmarks/` und `.github/` veraendert hat. Der erste Integrationscommit ist
+`3d15920`; `deac305` behebt die HEAD-Erkennung von `bin/push` in linked
+worktrees.
+
+| Pruefung | Ergebnis |
+|---|---|
+| Vollstaendige Suite | 84 Tests, 1 Skip, OK (21,9 s) |
+| Copilot-`selftest` | 8/8 Szenarien, `real_api_calls=0`, `paid_spend=0` |
+| Orchestrator-`selfcheck` | 133 Katalogeintraege, 13/13 Adapter, Negativproben OK |
+| `bin/push --check` | lokal `deac305` = remote `deac305`, MATCH |
+| Draft-PR | [#6](https://github.com/SFS-Labs/ctf-skill-factory/pull/6), 173 Dateien, Basis `main` |
+
+**AGENTS.md-Runtime:** Der installierte Orchestrator nimmt `AGENTS.md` ueber
+`deriveKnowledgeFiles` in `knowledgeFiles` auf; diese werden beim Session-Start
+als Projektinstructions injiziert. Das ist der belegte Ladepfad. Eine neue
+Freebuff-Sitzung wurde in dieser Ausfuehrung nicht automatisiert gestartet (die
+Desktop-App hat keinen headless Prompt-Einstieg); eine erzwungene
+Modellaktivierung wird daher nicht behauptet. Der aktuelle Chat begann vor
+Anlage der Datei.
+
+**Status:** `IMPLEMENTED`, `LOCALLY_TESTED`, `MOCK_VERIFIED`;
+`RUNTIME_VERIFIED` nur fuer den AGENTS.md-Ladepfad; `LIVE_DELEGATION_BLOCKED`;
+`PRODUCTION_VERIFIED` nicht erreicht.
+
+**PR-Berechtigung:** Der Fine-grained-PAT kann Inhalte pushen, aber
+Pull-Requests weder lesen noch schreiben (403). Der Draft-PR wurde ueber die
+verbundene SFS-Labs-GitHub-App erstellt; es wurde nichts gemergt.
