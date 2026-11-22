@@ -197,7 +197,8 @@ Kein Auto-Merge, keine Veroeffentlichung. Details und Evidenz:
 - **Tests:** `python3 -m unittest discover -s tests` -> 84 Tests, 1 Skip, OK;
   `selftest` -> 8/8 Mock-Szenarien, `real_api_calls=0`, `paid_spend=0`;
   `selfcheck` -> Katalog/Adapter/Negativproben OK;
-  `bin/push --check` -> lokal = remote.
+  `bin/push --check` -> lokal = remote. GitHub meldet fuer den PR-Head
+  **keine** Check-Runs/Statuses; ein CI-Erfolg wird nicht behauptet.
 - **Runtime:** Der installierte Orchestrator laedt `AGENTS.md` beim
   Session-Start als Projektanweisung (Code-Pfad `deriveKnowledgeFiles` ->
   `knowledgeFiles` -> Projektinstructions). Diese Sitzung begann vor Anlage der

@@ -275,8 +275,9 @@ worktrees.
 | Vollstaendige Suite | 84 Tests, 1 Skip, OK (21,9 s) |
 | Copilot-`selftest` | 8/8 Szenarien, `real_api_calls=0`, `paid_spend=0` |
 | Orchestrator-`selfcheck` | 133 Katalogeintraege, 13/13 Adapter, Negativproben OK |
-| `bin/push --check` | lokal `deac305` = remote `deac305`, MATCH |
-| Draft-PR | [#6](https://github.com/SFS-Labs/ctf-skill-factory/pull/6), 173 Dateien, Basis `main` |
+| `bin/push --check` | lokal = remote, MATCH |
+| Draft-PR | [#6](https://github.com/SFS-Labs/ctf-skill-factory/pull/6), 173 Dateien, Basis `main`, `draft=true`, `mergeable_state=clean` |
+| GitHub Checks | keine Check-Runs/Commit-Statuses gemeldet; kein CI-Erfolg behauptet |
 
 **AGENTS.md-Runtime:** Der installierte Orchestrator nimmt `AGENTS.md` ueber
 `deriveKnowledgeFiles` in `knowledgeFiles` auf; diese werden beim Session-Start
