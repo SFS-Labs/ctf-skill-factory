@@ -103,6 +103,13 @@ Negative Aktivierungsprobe (sachfremd, Marketingtext): `route` → `NO_MATCH`,
   `.agents/skills/ctf-skill-index-v8/SKILL.md` installiert war; im Skill-Register
   der Sitzung steht deshalb nur der Account-Skill `ctf-skill-index`. Ein
   nachtraeglicher `cloud_read_skill`-Readback ist laut AGENTS.md kein Nachweis.
+- **Checkout-Versatz:** `~/ctf-skills` ist auf `v8/adaptive-orchestrator`
+  ausgecheckt, damit der historische Branch unveraendert bleibt. Die dort
+  geladene Projektanweisung ist dessen `AGENTS.md` **ohne** den V8-Abschnitt;
+  der V9-Branch mit dieser Anweisung liegt im Worktree
+  `/tmp/ctf-v9-integration`. Fuer die Sitzungsabnahme muss der Workspace auf dem
+  V9-Checkout liegen. Der projektlokale Skill selbst ist in `~/ctf-skills`
+  installiert und damit fuer eine dort gestartete Sitzung auffindbar.
 - Folge: `SKILL_LOADED` ist in dieser Sitzung nicht beobachtbar. Belegt sind
   Installation, eindeutiger Name, reale Orchestratorausfuehrung, reale Artefakte,
   `verify` und die negative Aktivierungsprobe. Das ist `TOOLCHAIN_EXECUTED`,
