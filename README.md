@@ -1,5 +1,12 @@
 # ctf-skill-factory
 
+> [!IMPORTANT]
+> **This project has been integrated into [SFS-Labs/ctf-skills](https://github.com/SFS-Labs/ctf-skills).**
+> The complete Factory sources and all 134 knowledge cards were incorporated through [integration PR #2](https://github.com/SFS-Labs/ctf-skills/pull/2), merged on 2026-11-22.
+> **Use the consolidated repository for new issues, improvements, installation, and CI.**
+> This original repository remains available as a historical source snapshot; the standalone setup instructions below describe that historic state. Repository archival is a separate administration action and is not implied by this notice.
+
+
 Die **Skill-Fabrik**: 134 Security-Skills (EVM/Solidity, Solana, Move, Cairo, Bytecode, MEV, Audit-Wissen)
 als abrufbares, komponierbares System — nicht als loses Repo-Verzeichnis.
 
