@@ -125,3 +125,35 @@ Beim Automatisieren gefunden und im Rezept vermerkt: diffusc bricht mit `IndexEr
 
 `bin/smoke` endet mit Exit 0, wenn kein Werkzeug `FAIL` ist. `SKIP` heisst: Umgebung fehlt
 (Binary, `forge`, `solc` oder Netz) — kein bestandener Test, aber auch kein stilles Rot.
+## V8 — echte Orchestrator-Laeufe (2026-11-22)
+
+### Integritaet des Eingabepakets
+
+7/7 Eintraege bytegenau (Groesse, SHA-256, ZIP-Member), ZIP-SHA-256
+`c476e3720fed3ffbf8b857b0219d14a3f2afede0732397d5de876b7e317fced8`, `testzip()` sauber,
+Rekonstruktion in `.v8_staging/` ohne Traversal/Overwrite.
+
+### Hauptlauf (`--allow-exec`)
+
+| Schritt | Adapter | Exit | Artefakt |
+|---|---|---|---|
+| MAP | `surya describe` 0.4.13 | 0 | `surya-describe.log` |
+| STATIC | `slither --json` 0.11.6 | 255 (Befund) | `slither.json`, 79 KB, 10 Detektoren |
+| COUNTEREXAMPLE | `forge test --json` 1.10.0 | 0 | 3 bestehende Counterexample-Tests |
+| NEGATIVE_CONTROL | `forge test --match-test test_invariant_holds_initially` | 0 | Kontrolle besteht |
+
+Verdict `VERIFIED_LOCAL`, unabhaengige Methoden `static:slither` + `dynamic:forge`.
+Ein separater `verify`-Lauf ueber `evidence-report.json` reproduziert dasselbe Ergebnis.
+
+### Recovery ohne `forge`
+
+`slither` scheitert (Foundry-Framework) → Compiler-Diagnose → `slither-json-solc` mit
+`--compile-force-framework solc` liefert 12 Befunde; `echidna` scheitert am selben Grund →
+`echidna-assertion-solc` fuzzt 9 Assertions ohne Falsifikation. Verdict `STRUCTURAL_ONLY`:
+statischer Befund ohne Reproduktion ist kein Beweis. Nebenbefund: Slither und Echidna teilen
+den `crytic-compile`/`forge`-Stack und sind daher keine unabhaengigen Signale.
+
+### Grenzen
+
+Freebuff-Aktivierung ist modellvermittelt; dieser Build hat keinen Tool-Call-Hook und keine
+Trace-Ausgabe. `myth` ueberschreitet 60 s und wird als Blocker gefuehrt.
