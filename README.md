@@ -147,7 +147,7 @@ python3 bin/skill-orchestrator.py run    --task "<Aufgabe>" --target <datei.sol>
 python3 bin/skill-orchestrator.py verify --report <evidenz>/evidence-report.json
 python3 bin/skill-orchestrator.py selfcheck                          # Katalog + Adapter + Negativproben
 python3 bin/compare-v7-v8                                            # reproduzierbarer V7/V8-Vergleich
-python3 -m unittest discover -s tests                                # 84 Tests (49 V8 + 35 V9)
+python3 -m unittest discover -s tests                                # 91 Tests (49 V8 + 35 V9 + 7 Freebuff-Vertrag)
 ```
 
 Zustaende: `DISCOVERED · SELECTED · READY · INVOKED · COMPLETED · FAILED · UNAVAILABLE ·
@@ -194,7 +194,7 @@ Kein Auto-Merge, keine Veroeffentlichung. Details und Evidenz:
 - **Commits:** `3d15920` (Integration) und `deac305` (Worktree-Push-Fix)
 - **Draft-PR:** [#6](https://github.com/SFS-Labs/ctf-skill-factory/pull/6)
   gegen `main`, 173 Dateien; nur Review, kein Merge.
-- **Tests:** `python3 -m unittest discover -s tests` -> 84 Tests, 1 Skip, OK;
+- **Tests:** `python3 -m unittest discover -s tests` -> 91 Tests, 2 Skips, OK;
   `selftest` -> 8/8 Mock-Szenarien, `real_api_calls=0`, `paid_spend=0`;
   `selfcheck` -> Katalog/Adapter/Negativproben OK;
   `bin/push --check` -> lokal = remote. GitHub meldet fuer den PR-Head

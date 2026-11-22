@@ -261,10 +261,65 @@ V8-Dateien werden aus `*.backup-<stamp>` bzw. `backups/pre-v8-*.tar.gz` zurueckg
   Freebuff-Desktop-Sitzung. Automatische Skill-Aktivierung und realer V8-
   Orchestrator-Aufruf durch einen neu gestarteten Agenten sind daher
   `RUNTIME_UNVERIFIED`, nicht `PASS`.
-- Vorliegende 84 lokalen Tests (1 Skip) stammen aus dem abgeschlossenen V9-Run.
-  Die nachtraeglich ergaenzten Skill-Vertragstests muessen auf dem Node erneut
-  zusammen mit der Gesamtsuite ausgefuehrt werden.
+- Der reale Orchestratoraufruf ist inzwischen dennoch belegt (Abschnitt 14):
+  Installation, echter `run --allow-exec`, echte Artefakte, `verify` und die
+  negative Aktivierungsprobe wurden auf dem Node gemessen. Nicht belegt ist
+  allein der `skill`-Toolaufruf der neuen Sitzung.
 - Copilot-Delegation und Proficiency sind getrennt. Keine echten
   Copilot-Delegationen, kein zusaetzlicher Credit-Verbrauch, kein Auto-Merge.
+
+## 14. Nachtrag 2026-11-22 — reale Runtime-Ausfuehrung und Bug-Bounty-Reife
+
+Gegenstand: V9-Integrationsbranch `v9/copilot-delegation-integration` auf
+`0f1e6fd38782db0379f494acbbcfe360dc84b033`, Arbeitsverzeichnis `~/ctf-skills`.
+
+### 14.1 Ausgefuehrt, mit Messwerten
+
+| Pruefung | Ergebnis |
+|---|---|
+| `python3 -m unittest discover -s tests` | **91/91 OK** (2 Skips), 24,9 s |
+| `python3 bin/skill-orchestrator.py selfcheck` | Katalog 133, Adapter verfuegbar, Negativproben `INVALID`, Reserve `ok` |
+| `bash -n install-freebuff.sh` | Exit 0 |
+| `bash install-freebuff.sh --apply` | Exit 0, Backup `SKILL.md.pre-v8-20261122T015857Z` |
+| `.agents/skills/ctf-skill-index-v8/SKILL.md` | vorhanden, `name: ctf-skill-index-v8` |
+| `~/.agents/skills/ctf-skill-index/SKILL.md` | V7-Inhalt erhalten (133 Zeilen, sieben Regeln, L0-L9) + V8-Bruecke |
+| `run --allow-exec` auf `corpora/verify` | `VERIFIED`, 5,20 s, max. RSS 95.844 kB |
+| `verify --report` | `VERIFIED_LOCAL`, 3/3 Inhaltsfamilien, keine Widersprueche |
+| Wiederholungslauf | zweiter `run` ebenfalls `VERIFIED` / `VERIFIED_LOCAL` |
+| Manipulierter Evidenzbericht | `verify` → `INVALID` (SHA-256-Mismatch erkannt) |
+| Negativprobe (Marketingtext) | `NO_MATCH`, 0 Kandidaten |
+
+Statische Seite: `slither` 12 Befunde (u. a. `reentrancy-eth`, `arbitrary-send-eth`,
+`unchecked-lowlevel`). Dynamische Seite: `test_reentrancy_drains_vault`,
+`test_sweep_breaks_solvency`, `test_aggregate_invariant_blind_to_reentrancy` alle
+`Success`; Negativkontrolle `test_invariant_holds_initially` `Success`.
+Unabhaengige Methoden: `static:slither` + `dynamic:forge`.
+
+### 14.2 Bug-Bounty-Reife (nur lokaler autorisierter Korpus)
+
+| Kriterium | Befund |
+|---|---|
+| Automatische Skill-Auswahl | `route` waehlt `echidna` (33,96) und `slither` (25,32); sachfremd → `NO_MATCH` |
+| Reproduzierbare lokale Tests | forge-Laeufe deterministisch, Exit 0, Testnamen stabil |
+| Counterexample + Negativkontrolle | beide real vorhanden und im Evidenzvertrag erzwungen |
+| Inhaltliche Evidenzpruefung | `verify` prueft Assertion im Testrumpf, Negativkontrolle, Detektor-Claims |
+| Adaptive Recovery | im Vertrag getestet; real ohne `forge` belegt (Abschnitt 6) |
+| Ressourcenkontrolle | 95,8 MB RSS, 5,2 s, sequenziell, Reserve-Gate aktiv |
+| Nachvollziehbare Findings | `evidence-report.json` mit SHA-256 je Artefakt, `run-summary.json` 24 KB |
+
+**Verdikt: `PARTIAL`.** Die Pipeline ist fuer autorisierte lokale Korpusziele
+end-to-end belegt. Fuer externe Programme fehlen die Programmauswahl, der
+schriftlich zulaessige Scope, die Disclosure-Regeln und eine Zielserie; `myth`
+laeuft auf diesem Node weiterhin in den Timeout, Docker ist nicht vorhanden.
+
+### 14.3 Abgrenzung
+
+- Der `skill`-Toolaufruf mit `name=ctf-skill-index-v8` ist **nicht** belegt:
+  dieser Desktop-Build hat keinen automatisierbaren Sitzungsstart
+  (`/usr/bin/freebuff` liefert nur `path-repair`/`linux-launch`), und die Sitzung
+  begann vor der Installation. Status bleibt `RUNTIME_UNVERIFIED` fuer die
+  Aktivierung, `TOOLCHAIN_EXECUTED` fuer die Ausfuehrung.
+- Copilot: Governance geladen, `preflight` blockiert (Issues 403, Agent-Tasks 403,
+  Credits aufgebraucht). Keine Delegation, kein Credit-Verbrauch, kein Auto-Merge.
 
 Abnahmeverfahren: `docs/FREEBUFF-V8-RUNTIME-ACCEPTANCE.md`.

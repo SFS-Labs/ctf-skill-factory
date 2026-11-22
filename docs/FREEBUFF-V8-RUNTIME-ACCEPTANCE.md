@@ -1,7 +1,9 @@
 # Freebuff V8 Runtime-Abnahme — Skill-Kollision und echter Toolaufruf
 
-Stand: 2026-11-22. **Status: CODE_PREPARED / LIVE_RUNTIME_NOT_VERIFIED.**
-Diese Datei ist ein Abnahmeverfahren, kein Beleg fuer einen bereits ausgefuehrten Desktop-Test.
+Stand: 2026-11-22. **Status: TOOLCHAIN_EXECUTED / SESSION_ACTIVATION_UNVERIFIED.**
+Installation und Ausfuehrung des Orchestrators sind auf dem Node belegt (Abschnitt
+"Beobachteter Lauf"). Ein `skill`-Toolaufruf mit `name=ctf-skill-index-v8` durch einen
+*neu gestarteten* Agenten ist **nicht** belegt und bleibt `RUNTIME_UNVERIFIED`.
 
 ## Technische Diagnose
 
@@ -55,6 +57,57 @@ GitHub-Datei-Readbacks sind keine lokalen Testnachweise.
 7. Umgebungsgrenzen ausdruecklich pruefen: Wenn die Freebuff-Cloud den
    `~/ctf-skills`-Node nicht erreicht, keine lokale Toolausfuehrung vortaeuschen.
 
+## Beobachteter Lauf — 2026-11-22, Freebuff-Sitzung auf `~/ctf-skills`
+
+Gemessen auf dem echten Node, nicht simuliert. Aufruf durch den Freebuff-Agenten
+selbst im Projektverzeichnis `~/ctf-skills`.
+
+| Schritt | Befehl | Ergebnis |
+|---|---|---|
+| Suite | `python3 -m unittest discover -s tests` | **91/91 OK** (2 Skips: realer Korpuslauf + statusbedingter Vertragstest), 24,9 s |
+| Selbsttest | `python3 bin/skill-orchestrator.py selfcheck` | Katalog 133, Adapter verfuegbar, Negativproben `INVALID`, Reserve `ok` |
+| Syntax | `bash -n install-freebuff.sh` | Exit 0 |
+| Vorschau | `bash install-freebuff.sh` | Dry-Run, keine Schreibvorgaenge |
+| Installation | `bash install-freebuff.sh --apply` | Exit 0, Backup `SKILL.md.pre-v8-20261122T015857Z` |
+| Ziel | `.agents/skills/ctf-skill-index-v8/SKILL.md` | vorhanden, `name: ctf-skill-index-v8`, Verzeichnis passt |
+| V7 | `~/.agents/skills/ctf-skill-index/SKILL.md` | erhalten (133 Zeilen, "Sieben Regeln (V7, unveraendert gueltig)", L0-L9) + V8-Bruecke |
+
+Realer Orchestratorlauf, Aufgabe **ohne** Nennung des Skill-Namens:
+
+> Audit the local Solidity Vault in corpora/verify for withdraw reentrancy.
+> Produce a reproducible local counterexample, negative control and independently
+> verified evidence.
+
+| Schritt | Adapter | Status | Dauer |
+|---|---|---|---|
+| MAP | `surya describe` | COMPLETED | 1,32 s |
+| STATIC | `slither --json` | COMPLETED, 12 Befunde | 1,55 s |
+| COUNTEREXAMPLE | `forge test --json` | COMPLETED, 3 Tests Success | 0,15 s |
+| NEGATIVE_CONTROL | `forge test --match-test test_invariant_holds_initially` | COMPLETED | 0,08 s |
+
+Wandzeit 5,20 s, max. RSS 95.844 kB, strikt sequenziell. `verify` ueber
+`evidence-report.json`: `VERIFIED_LOCAL`, `content_verified_families` =
+`counterexample`, `negative_control`, `static`; unabhaengige Methoden `static:slither`
+und `dynamic:forge`; keine Widersprueche.
+
+Negative Aktivierungsprobe (sachfremd, Marketingtext): `route` → `NO_MATCH`,
+0 Kandidaten, 0 Domaenenkandidaten. Kein Security-Skill aktiviert.
+
+### Tatsaechliche technische Grenze
+
+- `/usr/bin/freebuff` ist ein Launcher-ELF ohne Unterbefehls-Dispatch: `--help`,
+  `--version` und `headless` liefern ausschliesslich `[path-repair]` und
+  `[linux-launch]` und starten die GUI. Es gibt keinen automatisierbaren
+  Sitzungsstart, kein Headless-Ziel und keinen Tool-Call-Hook.
+- Skill-Discovery geschieht beim **Sitzungsstart**. Diese Sitzung begann, bevor
+  `.agents/skills/ctf-skill-index-v8/SKILL.md` installiert war; im Skill-Register
+  der Sitzung steht deshalb nur der Account-Skill `ctf-skill-index`. Ein
+  nachtraeglicher `cloud_read_skill`-Readback ist laut AGENTS.md kein Nachweis.
+- Folge: `SKILL_LOADED` ist in dieser Sitzung nicht beobachtbar. Belegt sind
+  Installation, eindeutiger Name, reale Orchestratorausfuehrung, reale Artefakte,
+  `verify` und die negative Aktivierungsprobe. Das ist `TOOLCHAIN_EXECUTED`,
+  nicht `RUNTIME_VERIFIED`.
+
 ## Maschinenlesbare Abnahme
 
 Nur nach beobachtetem Lauf im existierenden `VERIFICATION.md` oder unter
@@ -63,16 +116,27 @@ Nur nach beobachtetem Lauf im existierenden `VERIFICATION.md` oder unter
 ```json
 {
   "skill_name": "ctf-skill-index-v8",
+  "skill_installed": true,
   "skill_tool_invoked": false,
   "skill_body_confirmed": false,
-  "orchestrator_run_invoked": false,
-  "report_verified": false,
-  "negative_activation_test": "NOT_RUN",
-  "status": "RUNTIME_UNVERIFIED"
+  "orchestrator_run_invoked": true,
+  "report_verified": true,
+  "negative_activation_test": "PASS",
+  "tests": "91/91 OK (2 skips)",
+  "status": "TOOLCHAIN_EXECUTED"
 }
 ```
 
-Die obigen `false`-Werte sind Ausgangszustand, keine Testresultate.
+Zusatzbefunde: zwei unabhaengige `run`-Laeufe liefern beide `VERIFIED` /
+`VERIFIED_LOCAL`; ein manipulierter SHA-256 im Evidenzbericht ergibt `INVALID`.
+
+`skill_installed`, `orchestrator_run_invoked`, `report_verified` und
+`negative_activation_test` sind in dieser Sitzung beobachtet.
+`skill_tool_invoked` und `skill_body_confirmed` bleiben `false`, weil der Build
+keinen Sitzungsstart erlaubt und die Sitzung vor der Installation begann.
+`tests/test_freebuff_v8_runtime_contract.py` haelt diese Status-Boolean-Konsistenz
+maschinell fest, damit `RUNTIME_VERIFIED` nicht ohne echten `skill`-Aufruf
+dokumentiert werden kann.
 
 Status nur bei belegter Evidenz hochstufen: `SKILL_LOADED` nach echtem
 `skill`-Aufruf, `ORCHESTRATOR_EXECUTED` nach realem `run`,

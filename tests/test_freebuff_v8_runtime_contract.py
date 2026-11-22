@@ -1,7 +1,10 @@
 """Contract tests for the project-local, noncolliding Freebuff V8 skill.
 
 These tests validate repository packaging, NOT a Freebuff desktop skill load.
+A green suite here is never evidence that a Freebuff session invoked the skill.
 """
+import json
+import re
 from pathlib import Path
 import unittest
 
@@ -39,6 +42,48 @@ class FreebuffV8ProjectSkillTests(unittest.TestCase):
         text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         self.assertIn("ctf-skill-index-v8", text)
         self.assertIn("bin/skill-orchestrator.py", text)
+
+
+class RuntimeAcceptanceStatusTests(unittest.TestCase):
+    """The acceptance record may not claim more than the observed evidence."""
+
+    ALLOWED = {
+        "RUNTIME_UNVERIFIED",
+        "SKILL_LOADED",
+        "ORCHESTRATOR_EXECUTED",
+        "TOOLCHAIN_EXECUTED",
+        "RUNTIME_VERIFIED",
+    }
+
+    def setUp(self):
+        text = (ROOT / "docs/FREEBUFF-V8-RUNTIME-ACCEPTANCE.md").read_text(encoding="utf-8")
+        blocks = re.findall(r"```json\n(.*?)```", text, re.S)
+        self.assertTrue(blocks, "Abnahme-Dokument ohne maschinenlesbaren Block")
+        self.record = json.loads(blocks[-1])
+
+    def test_status_is_a_documented_value(self):
+        self.assertIn(self.record["status"], self.ALLOWED)
+        self.assertEqual(self.record["skill_name"], "ctf-skill-index-v8")
+
+    def test_verified_status_requires_observed_skill_invocation(self):
+        if self.record["status"] != "RUNTIME_VERIFIED":
+            self.skipTest("Status ist nicht RUNTIME_VERIFIED")
+        for key in (
+            "skill_tool_invoked",
+            "skill_body_confirmed",
+            "orchestrator_run_invoked",
+            "report_verified",
+        ):
+            self.assertIs(self.record[key], True, f"RUNTIME_VERIFIED ohne {key}")
+        self.assertEqual(self.record["negative_activation_test"], "PASS")
+
+    def test_status_cannot_outrun_its_booleans(self):
+        if self.record["skill_tool_invoked"] is not True:
+            self.assertNotIn(self.record["status"], {"SKILL_LOADED", "RUNTIME_VERIFIED"})
+        if self.record["orchestrator_run_invoked"] is not True:
+            self.assertNotIn(self.record["status"], {"ORCHESTRATOR_EXECUTED", "RUNTIME_VERIFIED"})
+        if self.record["report_verified"] is not True:
+            self.assertNotEqual(self.record["status"], "RUNTIME_VERIFIED")
 
 
 if __name__ == "__main__":
